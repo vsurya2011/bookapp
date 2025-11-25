@@ -1,873 +1,579 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Book Hub — Modern Dashboard</title>
-  <style>
-    /* ----------------- Theme Variables ----------------- */
-    :root{
-      /* Dark Theme */
-      --bg: #0f172a; /* slate-900 */
-      --card: #1e293b; /* slate-800 */
-      --border: #334155; /* slate-700 */
-      --text: #f1f5f9; /* slate-100 */
-      --muted: #94a3b8; /* slate-400 */
-      --brand: #34d399; /* emerald-400 */
-      --brand-2: #6366f1; /* indigo-500 */
-      --shadow: 0 10px 30px rgba(0,0,0,0.5);
-    }
-    .light-theme {
-      /* Light Theme */
-      --bg: #f8fafc; /* slate-50 */
-      --card: #ffffff;
-      --border: #e2e8f0; /* slate-200 */
-      --text: #0f172a; /* slate-900 */
-      --muted: #64748b; /* slate-500 */
-      --brand: #059669; /* emerald-600 */
-      --brand-2: #4f46e5; /* indigo-600 */
-      --shadow: 0 10px 30px rgba(0,0,0,0.15);
-    }
-    /* ----------------- Global Styles ----------------- */
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;transition:background .3s, color .3s}
+<script>
+// --- Global State & Configuration ---
+const API_BASE = window.location.origin.includes('localhost') ? 'http://localhost:3000/api' : '/api';
+const ALLOWED_DOMAIN = '@gmail.com';
+
+// Simple state store using localStorage
+const store = {
+    // Get user object, which now includes the token
+    get user() { return JSON.parse(localStorage.getItem('hub_user') || 'null') },
+    set user(v) { localStorage.setItem('hub_user', JSON.stringify(v)) },
     
-    .container{max-width:1200px;margin:0 auto;padding:16px}
-    .row{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
-    .col{display:flex;flex-direction:column;gap:14px}
-    .grow{flex:1}
+    get listings() { return JSON.parse(localStorage.getItem('hub_listings') || '[]') },
+    set listings(v) { localStorage.setItem('hub_listings', JSON.stringify(v)) },
+    currentView: 'home',
+    activeListing: null
+}
 
-    /* ----------------- Header & Navigation ----------------- */
-    header{position:sticky;top:0;background:var(--bg);backdrop-filter:blur(5px);border-bottom:1px solid var(--border);z-index:5;box-shadow:0 2px 10px rgba(0,0,0,.1)}
-    .nav-link{padding:8px 12px;border-radius:6px;font-weight:600;color:var(--muted);cursor:pointer;transition:color .2s, background .2s}
-    .nav-link:hover{color:var(--text)}
-    .nav-link.active{background:var(--card);color:var(--brand)}
-    .nav-link.active:hover{color:var(--brand)}
-    .brand{display:flex;align-items:center;gap:8px;font-weight:900;letter-spacing:.5px;font-size:1.3rem;color:var(--text)}
-    .brand span{color:var(--brand)}
-    /* *UPDATED: Changed brand name from Used Books Hub to Book Hub* */
-    .brand{font-size:1.6rem}
+const qs = s => document.querySelector(s);
+const qsa = s => document.querySelectorAll(s);
 
-    /* ----------------- Buttons ----------------- */
-    .btn{appearance:none;border:0;border-radius:999px;padding:10px 18px;font-weight:600;cursor:pointer;transition:transform .1s ease, box-shadow .2s ease, opacity .2s;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
-    .btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 5px 15px rgba(0,0,0,.2)}
-    .btn:disabled{opacity:.5;cursor:not-allowed}
-    .btn.brand{background:var(--brand);color:var(--bg);box-shadow:0 4px 15px rgba(52, 211, 153, 0.4)}
-    .btn.ghost{background:transparent;color:var(--text);border:1px solid var(--border);box-shadow:none}
-    .btn.ghost:hover:not(:disabled){background:var(--card)}
-    .btn.google{background:var(--text);color:#111827;border:1px solid var(--border);box-shadow:none;width:100%;font-weight:600;padding:12px 18px}
-    .btn.google:hover{background:#f3f4f6;transform:none}
-    .btn.circle{width:40px;height:40px;padding:0;border-radius:50%;border:1px solid var(--border)}
+// --- Utility Functions ---
+function openModal(m){ m.style.display='flex' }
+function closeModal(m){ m.style.display='none' }
+function escapeHtml(s){ return (s+"").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;','\'':'&#39;'}[m])) }
 
-    /* ----------------- Layout & Cards ----------------- */
-    main{max-width:1200px;margin:32px auto 60px;padding:0 16px}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);padding:24px}
-    .hd-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:10px;border-bottom:1px solid var(--border)}
-    .hd-row h2{margin:0;font-size:1.5rem;color:var(--brand-2)}
+function showMessage(msg, type = 'info') {
+    // Basic console logging, replace with a UI alert if implemented
+    console.log(`[${type.toUpperCase()}] ${msg}`);
+}
 
-    /* ----------------- Listing Grid ----------------- */
-    .grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));gap:24px}
-    .listing-card{display:flex;flex-direction:column;border-radius:14px;overflow:hidden;background:var(--bg);border:1px solid var(--border);transition:box-shadow .2s ease, transform .1s ease;box-shadow:0 0 10px rgba(0,0,0,.1);cursor:pointer}
-    .light-theme .listing-card{box-shadow:0 0 10px rgba(0,0,0,.05)}
-    .listing-card:hover{box-shadow:0 8px 25px rgba(0,0,0,.3);transform:translateY(-4px)}
-    .listing-card img{width:100%;height:180px;object-fit:cover;background:var(--border);border-bottom:1px solid var(--border)}
-    .listing-card .info{padding:16px;display:flex;flex-direction:column;gap:8px;flex-grow:1}
-    .price{font-weight:900;font-size:1.4rem;color:var(--brand)}
-    .meta{display:flex;gap:10px;flex-wrap:wrap;font-size:.85rem;color:var(--muted)}
-    .listing-card h3{margin:0;font-size:1.1rem;line-height:1.4;color:var(--text)}
-    .tag{background:var(--border);padding:4px 8px;border-radius:999px;font-size:.75rem;font-weight:600}
-    .fine{font-size:.9rem;color:var(--muted)}
-    
-    /* ----------------- Forms ----------------- */
-    label{font-size:.9rem;color:var(--muted);font-weight:500}
-    input[type="text"],input[type="number"],input[type="email"],textarea,select{width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);margin-top:6px;font-size:1rem;transition:border-color .2s}
-    input:focus, textarea:focus, select:focus{border-color:var(--brand-2);outline:none}
-    textarea{min-height:90px}
-    .form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
-    @media (max-width: 720px){.form-grid{grid-template-columns:1fr}}
+// --- View Control ---
+const viewContainer = qs('#viewContainer');
+const navLinks = qsa('#navLinks .nav-link');
 
-    /* ----------------- Modals ----------------- */
-    .modal{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;padding:20px;z-index:50}
-    .modal .panel{width:min(400px,96vw);background:var(--card);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow)}
-    .modal .panel .hd{display:flex;justify-content:space-between;align-items:center;padding:18px 20px;border-bottom:1px solid var(--border);font-weight:700}
-    .modal .panel .bd{padding:20px}
-    .divider{display:flex;align-items:center;text-align:center;color:var(--muted);margin:20px 0}
-    .divider::before,.divider::after{content:'';flex:1;border-bottom:1px solid var(--border);margin:0 10px}
-    
-    /* Detail View Styles */
-    #detailView{display:grid;grid-template-columns:40% 1fr;gap:30px;padding:30px;align-items:flex-start}
-    @media (max-width: 900px){#detailView{grid-template-columns:1fr;padding:15px}}
-    #detailImage{width:100%;border-radius:10px;border:1px solid var(--border);object-fit:cover;max-height:450px}
-    #detailInfo h1{margin-top:0;font-size:2rem;line-height:1.2}
-    #detailInfo .price{font-size:2rem}
-    #detailInfo p{font-size:1rem;color:var(--text)}
-    #messageThread{margin-top:20px;border-top:1px solid var(--border);padding-top:20px}
-    .msg-item{background:var(--bg);border:1px solid var(--border);padding:10px;border-radius:8px;margin-bottom:10px}
-    .msg-item .sender{font-weight:700;color:var(--brand)}
-    
-    /* Home View */
-    #homeView .hero{background:linear-gradient(135deg, var(--brand-2) 0%, var(--brand) 100%);padding:60px 40px;border-radius:12px;color:#fff;text-align:center;margin-bottom:30px;box-shadow:var(--shadow)}
-    #homeView .hero h1{font-size:2.5rem;margin:0 0 10px}
-    #homeView .hero p{font-size:1.2rem;margin-bottom:20px}
-    .stat-card{text-align:center;padding:20px;background:var(--bg);border:1px solid var(--border);border-radius:10px}
-    .stat-card .num{font-size:2.5rem;font-weight:900;color:var(--brand-2);margin:0}
-    .stat-card .label{color:var(--muted)}
-    
-    /* Utility */
-    .hidden{display:none}
-  </style>
-</head>
-<body>
-  <header>
-    <div class="container row">
-      <!-- *UPDATED: Book Hub Name* -->
-      <a href="#" class="brand" onclick="setView('home'); return false;">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V5H6.5A2.5 2.5 0 0 0 4 7.5v12z"/><path d="M12 11h4"/><path d="M12 15h4"/></svg>
-        Book <span>Hub</span>
-      </a>
-      
-      <div class="row grow" id="navLinks">
-        <div class="nav-link active" data-view="home">Home</div>
-        <div class="nav-link" data-view="listings">All Books</div>
-        <div class="nav-link" data-view="my-listings">My Books</div>
-        <div class="nav-link" data-view="add-listing">Add Listing</div>
-      </div>
-      
-      <div class="row">
-        <button class="btn circle ghost" id="themeToggle" title="Toggle Light/Dark Theme">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>
-        </button>
-        <button class="btn brand" id="authBtn">Sign In</button>
-      </div>
-    </div>
-  </header>
-
-  <main>
-    <!-- View Container -->
-    <div id="viewContainer">
-      <!-- 1. Home View -->
-      <section id="homeView" class="hidden">
-        <!-- *UPDATED: Book Hub Name* -->
-        <div class="hero">
-          <h1>Welcome to the Book Hub</h1>
-          <p>Securely buy, sell, and exchange books using a verified email network.</p>
-          <button class="btn brand" style="color:white" onclick="setView('listings')">Browse All Listings</button>
-        </div>
-        <div class="hd-row"><h2>Platform Stats</h2></div>
-        <div class="grid" style="grid-template-columns:repeat(auto-fit, minmax(200px, 1fr))">
-          <div class="stat-card"><p class="num" id="statTotalBooks">0</p><p class="label">Total Books Listed</p></div>
-          <div class="stat-card"><p class="num" id="statTotalUsers">1</p><p class="label">Verified Users (Demo)</p></div>
-          <div class="stat-card"><p class="num">~75%</p><p class="label">Average Discount</p></div>
-          <div class="stat-card"><p class="num" id="statMyListings">0</p><p class="label">Your Active Listings</p></div>
-        </div>
-        <div class="hd-row" style="margin-top:30px"><h2>How It Works</h2></div>
-        <div class="grid" style="grid-template-columns:1fr 1fr">
-          <div class="card">
-            <!-- *UPDATED: Email Verification Title* -->
-            <h3>Email Verification</h3>
-            <!-- *UPDATED: Email Domain Text* -->
-            <p class="fine">All users must verify their identity using a <code>@gmail.com</code> domain email, ensuring a trusted environment for transactions.</p>
-          </div>
-          <div class="card">
-            <h3>Direct Contact & Secure Exchange</h3>
-            <p class="fine">Contact sellers directly using our in-app messenger or email draft. Set up your exchange safely.</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- 2. All Books (Listings) View -->
-      <section id="listingsView" class="hidden">
-        <div class="hd-row"><h2>All Available Listings</h2></div>
-        
-        <!-- Filters (combined with the main listings view) -->
-        <div class="card col" style="margin-bottom:20px; padding:15px 24px">
-          <div class="row" style="gap:16px; flex-wrap:wrap">
-              <input id="q" type="text" placeholder="Search by title, author, course, subject…" class="grow" />
-              <select id="typeFilter" style="width:150px">
-                  <option value="">Type (All)</option>
-                  <option>Sell</option>
-                  <option>Buy</option>
-                  <option>Exchange</option>
-              </select>
-              <select id="condFilter" style="width:150px">
-                  <option value="">Condition (Any)</option>
-                  <option>Like New</option>
-                  <option>Good</option>
-                  <option>Fair</option>
-              </select>
-              <select id="sortBy" style="width:150px">
-                  <option value="new">Newest</option>
-                  <option value="priceAsc">Price: Low to High</option>
-                  <option value="priceDesc">Price: High to Low</option>
-                  <option value="title">Title A→Z</option>
-              </select>
-              <button class="btn ghost" id="clearFilters">Clear</button>
-          </div>
-        </div>
-
-        <div id="listingsGrid" class="grid"></div>
-        <div id="emptyListings" class="card hidden" style="text-align:center; padding:40px; margin-top:30px">
-          <p class="fine">No books match your current filters. Be the first to list a book!</p>
-        </div>
-      </section>
-      
-      <!-- 3. My Books View -->
-      <section id="myListingsView" class="hidden">
-        <div class="hd-row"><h2>Your Active Listings <span id="myListingsCount" class="tag">0</span></h2></div>
-        <div id="myListingsGrid" class="grid"></div>
-        <div id="emptyMyListings" class="card hidden" style="text-align:center; padding:40px; margin-top:30px">
-          <p class="fine">You haven't posted any books yet. <a href="#" onclick="setView('add-listing'); return false;">List your first book now!</a></p>
-        </div>
-      </section>
-
-      <!-- 4. Add Listing View -->
-      <section id="addListingView" class="hidden">
-        <div class="hd-row"><h2>Add a New Book Listing</h2></div>
-        <div class="card">
-          <form id="listingForm">
-            <div class="form-grid">
-              <div>
-                <label>Type
-                  <select name="type" required>
-                    <option>Sell</option>
-                    <option>Buy</option>
-                    <option>Exchange</option>
-                  </select>
-                </label>
-              </div>
-              <div>
-                <label>Price (₹) <span class="fine">(0 for Exchange/Want-to-Buy)</span>
-                  <input name="price" type="number" min="0" value="0" required />
-                </label>
-              </div>
-              <div>
-                <label>Title
-                  <input name="title" type="text" required placeholder="e.g., Data Structures in C" />
-                </label>
-              </div>
-              <div>
-                <label>Author
-                  <input name="author" type="text" placeholder="e.g., Seymour Lipschutz" />
-                </label>
-              </div>
-              <div>
-                <label>Course/Subject
-                  <input name="subject" type="text" placeholder="e.g., CSE201 / Algorithms" />
-                </label>
-              </div>
-              <div>
-                <label>Condition
-                  <select name="condition">
-                    <option>Like New</option>
-                    <option>Good</option>
-                    <option>Fair</option>
-                  </select>
-                </label>
-              </div>
-            </div>
-
-            <label style="margin-top:16px;display:block">Description
-              <textarea name="description" placeholder="Edition, highlights, notes, exchange preferences, etc."></textarea>
-            </label>
-
-            <div class="row" style="margin-top:16px;align-items:flex-end">
-              <div style="flex-grow:0.5">
-                <label>Cover Image
-                  <input name="image" id="imageInput" type="file" accept="image/*" />
-                </label>
-              </div>
-              <img id="preview" alt="Preview" style="width:80px;height:80px;object-fit:cover;border-radius:10px;border:1px solid var(--border);margin-left:8px;display:none" />
-              <div class="grow"></div>
-              <button class="btn brand" type="submit">Publish Listing</button>
-            </div>
-          </form>
-        </div>
-      </section>
-      
-      <!-- Detail Modal -->
-      <div id="detailModal" class="modal">
-        <div class="panel" style="width:min(900px, 96vw)">
-          <div class="hd">
-            <span id="detailTitle">Listing Details</span>
-            <button class="btn ghost" onclick="closeModal(detailModal)">Close</button>
-          </div>
-          <div class="bd" id="detailContent">
-            <!-- Content loaded dynamically -->
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </main>
-  
-  <!-- Login Modal (Now just for sign-in/out) -->
-  <div class="modal" id="authModal" role="dialog" aria-modal="true" aria-labelledby="authTitle">
-    <div class="panel">
-      <div class="hd">
-        <span id="authTitle">Account Access</span>
-        <button class="btn ghost" onclick="closeModal(authModal)">Close</button>
-      </div>
-      <div class="bd">
-        <button class="btn google" id="googleAuthBtn" disabled>
-          <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" style="width:18px;height:18px" aria-hidden="true"><path fill="#fbc02d" d="M43.6 20.4H24v7.2h10.8c-.8 4.4-4.8 7.6-10.8 7.6-6.6 0-12-5.4-12-12s5.4-12 12-12c3.2 0 6.2 1.2 8.4 3.2l5.6-5.6c-4.2-4-9.8-6.4-16-6.4C12 4.8 4 12.8 4 24s8 19.2 20 19.2c12 0 19.2-8 19.2-19.2 0-1.6-.2-3.2-.4-4.8z"/><path fill="#e53935" d="M4 24c0-3.6.8-7 2.4-10.2l6.2 4.8c-.6 1.8-.8 3.8-.8 5.4s.2 3.6.8 5.4l-6.2 4.8c-1.6-3.2-2.4-6.6-2.4-10.2z"/><path fill="#4caf50" d="M24 43.6c-5.4 0-10.2-2.2-13.6-5.6l6.2-4.8c3.2 2 7 3.2 11 3.2 4.6 0 8.6-2 11.4-5.4l6.2 4.8c-3 4.2-7.8 6.8-13.6 6.8z"/><path fill="#1976d2" d="M43.6 20.4c0-1.6-.2-3.2-.4-4.8H24v9.6h10.8c.6 3.8 3.8 6.6 8.4 6.6 2.4 0 4.6-.6 6.4-1.8l-5.6-5.6c-1.4-1.2-3.4-1.8-5.2-1.8z"/></svg>
-          Continue with Google
-        </button>
-
-        <div class="divider">OR</div>
-
-        <form id="authForm">
-          <div class="fine" style="margin-bottom:12px">Use your primary Email for access.</div>
-          <div>
-            <label>Full Name
-              <input name="name" type="text" required placeholder="e.g., Priya Sharma" value="Demo User" />
-            </label>
-          </div>
-          <div>
-            <label>Email
-              <!-- *UPDATED: Placeholder email* -->
-              <input name="email" type="email" required placeholder="name@gmail.com" value="demo@gmail.com" />
-            </label>
-          </div>
-          <!-- *UPDATED: Email Domain Text* -->
-          <div class="fine" style="margin:16px 0 10px">Your email must end with <code>@gmail.com</code> for access.</div>
-          <div class="row" style="margin-top:10px; justify-content:flex-end">
-            <button class="btn brand" type="submit">Verify & Sign In</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    // --- Global State & Configuration ---
-    const API_BASE = window.location.origin.includes('localhost') ? 'http://localhost:10000/api' : '/api';
-    // *UPDATED: New allowed domain*
-    const ALLOWED_DOMAIN = '@gmail.com';
-    
-    // Simple state store using localStorage
-    const store = {
-      get user() { return JSON.parse(localStorage.getItem('hub_user') || 'null') },
-      set user(v) { localStorage.setItem('hub_user', JSON.stringify(v)) },
-      get listings() { return JSON.parse(localStorage.getItem('hub_listings') || '[]') }, // Using this as a local cache
-      set listings(v) { localStorage.setItem('hub_listings', JSON.stringify(v)) },
-      currentView: 'home',
-      activeListing: null
+function setView(viewName) {
+    if (['my-listings', 'add-listing'].includes(viewName) && !store.user) {
+        showMessage('Please sign in to access this page.', 'info');
+        openModal(qs('#authModal'));
+        return;
     }
 
-    const qs = s => document.querySelector(s);
+    store.currentView = viewName;
     
-    // --- Utility Functions ---
-    function openModal(m){ m.style.display='flex' }
-    function closeModal(m){ m.style.display='none' }
-    function escapeHtml(s){ return (s+"").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[m])) }
+    qsa('section').forEach(s => s.classList.add('hidden'));
+    qs(`#${viewName}View`).classList.remove('hidden');
+
+    navLinks.forEach(link => {
+        link.classList.toggle('active', link.dataset.view === viewName);
+    });
     
-    function showMessage(msg, type = 'info') {
-        alert(`${type.toUpperCase()}: ${msg}`); // Use alert for simplicity in this demo
-    }
-
-    // --- API Calls (Simulated Backend Interaction) ---
-    async function apiFetch(endpoint, options = {}) {
-      try {
-        const response = await fetch(`${API_BASE}${endpoint}`, {
-          headers: {
-            'Content-Type': 'application/json',
-            ...(store.user && { 'Authorization': `Bearer ${store.user.token}` })
-          },
-          ...options
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || 'API Request Failed');
-        }
-        return data;
-      } catch (error) {
-        showMessage(`API Error: ${error.message}`, 'error');
-        return null;
-      }
-    }
-
-    // --- View/Page Switching ---
-    const viewMap = {
-      'home': qs('#homeView'),
-      'listings': qs('#listingsView'),
-      'my-listings': qs('#myListingsView'),
-      'add-listing': qs('#addListingView')
-    };
-
-    function setView(viewName) {
-      if (!viewMap[viewName]) return;
-      
-      // Update global state
-      store.currentView = viewName;
-
-      // Hide all views
-      Object.values(viewMap).forEach(el => el.classList.add('hidden'));
-      
-      // Show target view
-      viewMap[viewName].classList.remove('hidden');
-
-      // Update active navigation link
-      qs('.nav-link.active')?.classList.remove('active');
-      qs(`[data-view="${viewName}"]`)?.classList.add('active');
-
-      // Re-render data for the new view
-      if (viewName === 'listings') {
-        loadAndRenderListings();
-      } else if (viewName === 'my-listings') {
+    if (viewName === 'listings') {
+        renderListingsGrid();
+    } else if (viewName === 'my-listings') {
         renderMyListings();
-      } else if (viewName === 'home') {
-        updateHomeStats();
-      }
+    }
+}
+
+
+// --- API Fetch Utility (UPDATED to send Authorization Header) ---
+async function apiFetch(path, options = {}) {
+    const defaultHeaders = { 'Content-Type': 'application/json' };
+    
+    // Attach JWT token to all requests except login/signup/public GET /books
+    if (store.user && store.user.token && !path.includes('/auth/')) {
+        defaultHeaders['Authorization'] = `Bearer ${store.user.token}`;
     }
 
-    // Attach event listeners to navigation links
-    qs('#navLinks').querySelectorAll('.nav-link').forEach(link => {
-      link.addEventListener('click', (e) => setView(e.target.dataset.view));
+    const response = await fetch(API_BASE + path, {
+        ...options,
+        headers: {
+            ...defaultHeaders,
+            ...options.headers,
+        },
     });
 
-    // --- Theme Toggle ---
-    const themeToggleBtn = qs('#themeToggle');
-    function toggleTheme() {
-      const isLight = document.body.classList.toggle('light-theme');
-      localStorage.setItem('hub_theme', isLight ? 'light' : 'dark');
-      themeToggleBtn.innerHTML = isLight 
-        ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>'
-        : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>';
+    if (response.ok) {
+        // Successful DELETE returns 200, but no content
+        if (options.method === 'DELETE' && response.status === 200) {
+            return { success: true };
+        }
+        
+        // GET /books returns an array directly, not wrapped in { data: [...] }
+        if (path === '/books' && options.method === 'GET') {
+            return await response.json();
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            return data.data; // Return the actual data payload
+        } else {
+            showMessage(data.message || 'An unknown API error occurred.', 'error');
+            return null;
+        }
+    } else {
+        try {
+            const errorBody = await response.json();
+            showMessage(errorBody.message || `API Error: ${response.status} ${response.statusText}`, 'error');
+        } catch (e) {
+            showMessage(`Network or Server error: ${response.status} ${response.statusText}`, 'error');
+        }
+        // If 401/403, force logout
+        if (response.status === 401 || response.status === 403) {
+             handleLogout();
+        }
+        return null;
     }
-    themeToggleBtn.addEventListener('click', toggleTheme);
-    
-    // Initialize theme
-    const savedTheme = localStorage.getItem('hub_theme');
-    if (savedTheme === 'light') {
-      document.body.classList.add('light-theme');
-      themeToggleBtn.click(); // Trigger click to set icon
-    }
-    
-    // --- Authentication ---
-    const authBtn = qs('#authBtn');
-    const authModal = qs('#authModal');
-    const authForm = qs('#authForm');
-    const googleAuthBtn = qs('#googleAuthBtn');
+}
 
-    function updateAuthUI() {
-      if (store.user) {
+
+// --- Theme Toggle (Remains the same) ---
+const themeToggleBtn = qs('#themeToggle');
+function toggleTheme() {
+    const isLight = document.body.classList.toggle('light-theme');
+    localStorage.setItem('hub_theme', isLight ? 'light' : 'dark');
+    themeToggleBtn.innerHTML = isLight ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>' : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>';
+}
+themeToggleBtn.addEventListener('click', toggleTheme);
+const savedTheme = localStorage.getItem('hub_theme');
+if (savedTheme === 'light') {
+    document.body.classList.add('light-theme');
+    // Ensure icon is correctly set
+    themeToggleBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>';
+}
+
+// --- Authentication (UPDATED for JWT) ---
+const authBtn = qs('#authBtn');
+const authModal = qs('#authModal');
+const authForm = qs('#authForm');
+
+function updateAuthUI() {
+    if (store.user) {
+        // User is logged in, display name and Sign Out
         authBtn.textContent = store.user.name.split(' ')[0] + ' • Sign Out';
         authBtn.classList.remove('brand');
         authBtn.classList.add('ghost');
-      } else {
+    } else {
+        // User is logged out, display Sign In
         authBtn.textContent = 'Sign In';
         authBtn.classList.remove('ghost');
         authBtn.classList.add('brand');
-      }
-      renderMyListings(); // Re-render My Books view
+        setView('home'); // Redirect if the current view requires login
     }
+    updateHomeStats(); 
+}
 
-    authBtn.addEventListener('click', () => {
-      if (store.user) {
-        if (confirm('Are you sure you want to sign out?')) {
-          store.user = null;
-          updateAuthUI();
-          setView('home');
-          showMessage('Signed out successfully.', 'info');
-        }
-      } else {
+function handleLogout() {
+    store.user = null; // Clear local storage
+    updateAuthUI(); 
+    showMessage('Logged out successfully.', 'info');
+}
+
+// Attach Sign In/Out button listener
+authBtn.addEventListener('click', (e) => {
+    if (store.user) {
+        handleLogout();
+    } else {
         openModal(authModal);
-      }
-    });
+    }
+});
 
-    // Handle form-based login
-    authForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      await handleAuth(new FormData(authForm));
-    });
-    
-    // Handle simulated Google login
-    googleAuthBtn.disabled = false;
-    googleAuthBtn.addEventListener('click', async () => {
-        // *UPDATED: Updated demo email to @gmail.com*
-        const fakeData = { name: "Google Sign-in Demo", email: "google.demo@gmail.com" };
-        const formData = new FormData();
-        formData.append('name', fakeData.name);
-        formData.append('email', fakeData.email);
-        await handleAuth(formData, true);
-    });
+authForm.addEventListener('submit', handleAuthSubmit);
 
-    async function handleAuth(formData, isGoogle = false) {
-      const data = Object.fromEntries(formData.entries());
-      
-      const response = await apiFetch('/auth/login', {
-          method: 'POST',
-          body: JSON.stringify(data)
-      });
-      
-      if (response && response.user) {
-        store.user = response.user;
-        updateAuthUI();
-        closeModal(authModal);
-        showMessage(`Welcome, ${response.user.name.split(' ')[0]}! You are now signed in.`, 'success');
-        setView('listings');
-      }
+async function handleAuthSubmit(e) {
+    e.preventDefault();
+    const form = e.target;
+    // Check if the form has a name input, which indicates the Sign Up form
+    const isLogin = form.querySelector('[name="password"]') && form.querySelector('[name="name"]').value === 'NOT_USED'; 
+
+    const email = form.querySelector('[name="email"]').value.trim();
+    const password = form.querySelector('[name="password"]').value.trim();
+    const nameInput = form.querySelector('[name="name"]');
+    const name = nameInput ? nameInput.value.trim() : '';
+
+    if (!email || !password || (isLogin === false && !name)) {
+        showMessage('Please fill in all required fields.', 'error');
+        return;
     }
 
+    const payload = { email, password };
+    let path = '/auth/login';
 
-    // --- Listing Data & Filtering ---
-    const q = qs('#q');
-    const typeFilter = qs('#typeFilter');
-    const condFilter = qs('#condFilter');
-    const sortBy = qs('#sortBy');
-    const clearFilters = qs('#clearFilters');
+    if (nameInput.value !== 'NOT_USED') {
+        // This is a Sign Up attempt
+        path = '/auth/signup';
+        payload.name = name; 
+    }
 
-    // Attach event listeners for filtering/sorting
-    ;[q, typeFilter, condFilter, sortBy].forEach(el => el.addEventListener('input', renderListingsGrid));
-    clearFilters.addEventListener('click', () => {
-      q.value='';typeFilter.value='';condFilter.value='';sortBy.value='new';
-      renderListingsGrid();
+    const submitBtn = form.querySelector('[type="submit"]');
+    submitBtn.disabled = true;
+
+    const userData = await apiFetch(path, {
+        method: 'POST',
+        body: JSON.stringify(payload),
     });
 
-    function applyFilters(data, isMyListings = false) {
-      if (isMyListings && store.user) {
-        data = data.filter(d => d.owner.userId === store.user.userId);
-      }
-      
-      const term = q.value.trim().toLowerCase();
-      let res = data.filter(d => {
-        const str = (d.title + ' ' + d.author + ' ' + d.subject + ' ' + d.description).toLowerCase();
+    submitBtn.disabled = false; 
+
+    if (userData) {
+        store.user = userData; // Store user data including JWT token
+        closeModal(authModal);
+        updateAuthUI();
+        showMessage(path.includes('login') ? 'Welcome back! Login successful.' : 'Account created! Welcome to Book Hub.', 'success');
+        setView('listings'); 
+    }
+}
+
+
+// --- Listings/Data Fetch and Rendering (Mostly the same, updated to use new data structure) ---
+
+function applyFilters(data, forMyListings) {
+    const q = qs('#q') || { value: '' };
+    const typeFilter = qs('#typeFilter') || { value: '' };
+    const condFilter = qs('#condFilter') || { value: '' };
+    const sortBy = qs('#sortBy') || { value: 'new' };
+
+    let res = data;
+
+    if (forMyListings && store.user) {
+        res = res.filter(d => d.owner.userId === store.user.userId); 
+    }
+
+    const term = q.value.trim().toLowerCase();
+    res = res.filter(d => {
+        const str = (d.title + ' ' + d.author + ' ' + (d.subject || '') + ' ' + d.description).toLowerCase();
         if (term && !str.includes(term)) return false;
         if (typeFilter.value && d.type !== typeFilter.value) return false;
         if (condFilter.value && d.condition !== condFilter.value) return false;
         return true;
-      });
+    });
 
-      switch (sortBy.value) {
+    switch (sortBy.value) {
         case 'priceAsc': res.sort((a, b) => a.price - b.price); break;
         case 'priceDesc': res.sort((a, b) => b.price - a.price); break;
         case 'title': res.sort((a, b) => a.title.localeCompare(b.title)); break;
         default: res.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      }
-      return res;
     }
+    return res;
+}
 
-    async function loadAndRenderListings() {
-      const data = await apiFetch('/books');
-      if (data) {
-        store.listings = data; // Cache in store
-        renderListingsGrid();
-      }
-    }
+function createListingCard(d, isOwnerView) {
+    const ownerName = d.owner && d.owner.name ? d.owner.name.split(' ')[0] : 'Unknown';
+    const priceDisplay = d.type === 'Exchange' ? `<span class="tag" style="background:var(--brand-2); color:white">EXCHANGE</span>`
+        : d.type === 'Buy' ? `<span class="tag" style="background:var(--brand); color:white">WANT TO BUY</span>`
+        : `<span class="price">₹ ${Number(d.price).toLocaleString()}</span>`;
 
-    function renderListingsGrid() {
-      const allData = store.listings;
-      const filteredData = applyFilters(allData, false);
-      const grid = qs('#listingsGrid');
-      grid.innerHTML = '';
-      
-      qs('#statTotalBooks').textContent = allData.length;
-      
-      if (!filteredData.length) {
+    const card = document.createElement('div');
+    card.className = 'listing-card';
+    card.innerHTML = `
+        <img src="${d.image || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="100%" height="100%" fill="var(--border)"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="var(--muted)" font-family="Inter" font-size="16">No Cover</text></svg>'}" alt="${escapeHtml(d.title)} Cover">
+        <div class="info">
+            <div class="row" style="justify-content:space-between">
+                <div class="tag">${escapeHtml(d.condition)}</div>
+                ${priceDisplay}
+            </div>
+            <h3>${escapeHtml(d.title)}</h3>
+            <div class="fine">by ${escapeHtml(d.author || 'Unknown')}</div>
+            <div class="meta">
+                <span>Type: ${escapeHtml(d.type)}</span> | 
+                <span>Posted by: ${ownerName}</span>
+            </div>
+            <div class="row" style="margin-top:auto; padding-top:10px; border-top:1px dashed var(--border)">
+                <button class="btn ghost grow" data-action="view-details">Details & Messages</button>
+                ${isOwnerView ? `<button class="btn brand" style="background:#dc2626" data-action="remove">Remove</button>` : ''}
+            </div>
+        </div>
+    `; 
+    card.addEventListener('click', (e) => {
+        const action = e.target.dataset.action;
+        if (action === 'remove') {
+            handleDeleteListing(d._id, d.title);
+        } else {
+            showDetailModal(d);
+        }
+    });
+    return card;
+}
+
+function renderListingsGrid() {
+    const allData = store.listings;
+    const filteredData = applyFilters(allData, false);
+    const grid = qs('#listingsGrid');
+    grid.innerHTML = '';
+    qs('#statTotalBooks').textContent = allData.length;
+
+    if (!filteredData.length) {
         qs('#emptyListings').classList.remove('hidden');
         return;
-      }
-      qs('#emptyListings').classList.add('hidden');
-
-      filteredData.forEach(d => grid.appendChild(createListingCard(d, false)));
     }
-    
-    function renderMyListings() {
-      if (!store.user) {
-        qs('#myListingsView').innerHTML = '<div class="card" style="text-align:center; padding:40px; margin-top:30px"><p class="fine">Please sign in to view and manage your listings.</p><button class="btn brand" onclick="openModal(authModal)">Sign In Now</button></div>';
+    qs('#emptyListings').classList.add('hidden');
+    filteredData.forEach(d => grid.appendChild(createListingCard(d, false)));
+}
+
+function renderMyListings() {
+    if (!store.user) {
+        qs('#myListingsGrid').innerHTML = '';
+        qs('#emptyMyListings').classList.remove('hidden');
         qs('#myListingsCount').textContent = '0';
         qs('#statMyListings').textContent = '0';
         return;
-      }
+    }
+    
+    const myListings = applyFilters(store.listings, true);
+    const grid = qs('#myListingsGrid');
+    grid.innerHTML = '';
+    qs('#myListingsCount').textContent = myListings.length;
+    qs('#statMyListings').textContent = myListings.length;
 
-      const myListings = applyFilters(store.listings, true);
-      const grid = qs('#myListingsGrid');
-      grid.innerHTML = '';
-      
-      qs('#myListingsCount').textContent = myListings.length;
-      qs('#statMyListings').textContent = myListings.length;
-      
-      if (!myListings.length) {
+    if (!myListings.length) {
         qs('#emptyMyListings').classList.remove('hidden');
         return;
-      }
-      qs('#emptyMyListings').classList.add('hidden');
-
-      myListings.forEach(d => grid.appendChild(createListingCard(d, true)));
     }
-    
-    function updateHomeStats() {
-        const myListings = applyFilters(store.listings, true);
-        qs('#statTotalBooks').textContent = store.listings.length;
+    qs('#emptyMyListings').classList.add('hidden');
+    myListings.forEach(d => grid.appendChild(createListingCard(d, true)));
+}
+
+function updateHomeStats() {
+    qs('#statTotalBooks').textContent = store.listings.length;
+    if (store.user) {
+        const myListings = store.listings.filter(d => d.owner.userId === store.user.userId);
         qs('#statMyListings').textContent = myListings.length;
+    } else {
+        qs('#statMyListings').textContent = '0';
     }
-    
-    // --- Card Rendering ---
-    function createListingCard(d, isOwnerView = false) {
-      const card = document.createElement('article');
-      card.className = 'listing-card';
-      card.setAttribute('data-id', d._id); // Use MongoDB ID
-      
-      const imgPlaceholder = 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="100%" height="100%" fill="var(--border)"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="var(--muted)" font-family="Inter" font-size="16">No Cover</text></svg>`);
-      
-      const priceDisplay = d.type === 'Exchange' 
-        ? `<span class="price" style="color:var(--brand-2)">EXCHANGE</span>`
-        : d.type === 'Buy'
-        ? `<span class="price" style="color:var(--brand-2)">WANT TO BUY</span>`
-        : `<span class="price" style="color:var(--brand)">₹ ${Number(d.price).toLocaleString()}</span>`;
+}
 
-      const typeColor = d.type === 'Sell' ? 'var(--brand)' : d.type === 'Buy' ? 'var(--brand-2)' : 'var(--muted)';
+async function loadAndRenderListings() {
+    // GET /api/books is public, so no token is needed here
+    const data = await apiFetch('/books', { method: 'GET' }); 
+    if (data) {
+        store.listings = data; // Cache in store
+        renderListingsGrid();
+        renderMyListings(); 
+        updateHomeStats();
+    }
+}
 
-      card.innerHTML = `
-        <img src="${d.image || imgPlaceholder}" alt="${escapeHtml(d.title)} Cover" onerror="this.src='${imgPlaceholder}'" />
-        <div class="info">
-          <div class="row" style="justify-content:space-between;align-items:flex-start">
-            <h3 style="flex-grow:1">${escapeHtml(d.title)}</h3>
-            <span class="tag" style="background:${typeColor}; color:var(--bg); border:0">${d.type}</span>
-          </div>
-          <div class="fine" style="margin-bottom:4px">${escapeHtml(d.author || 'Unknown')} • ${escapeHtml(d.subject || 'General')}</div>
-          ${priceDisplay}
-          <div class="meta">
-            <span>Condition: ${d.condition}</span>
-            <span>|</span>
-            <span>Posted by: ${escapeHtml(d.owner.name.split(' ')[0])}</span>
-          </div>
-          <div class="row" style="margin-top:auto; padding-top:10px; border-top:1px dashed var(--border)">
-            <button class="btn ghost grow" data-action="view-details">Details & Messages</button>
-            ${isOwnerView ? `<button class="btn brand" style="background:#dc2626" data-action="remove">Remove</button>` : ''}
-          </div>
+// Event Listeners for Filters
+qsa('#q, #typeFilter, #condFilter, #sortBy').forEach(el => el.addEventListener('input', renderListingsGrid));
+qs('#clearFilters').addEventListener('click', () => {
+    qs('#q').value = '';
+    qs('#typeFilter').value = '';
+    qs('#condFilter').value = '';
+    qs('#sortBy').value = 'new';
+    renderListingsGrid();
+});
+
+// --- Detail Modal Functions ---
+const detailModal = qs('#detailModal');
+const detailContent = qs('#detailContent');
+
+function renderMessages(msgs) {
+    if (!msgs || msgs.length === 0) return '<p class="fine" style="text-align:center">No messages yet.</p>';
+    // Sort messages by timestamp if they are not already
+    msgs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+    return msgs.map(m => `
+        <div class="msg-item">
+            <div class="sender">${escapeHtml(m.by)} <span class="fine" style="float:right">${new Date(m.timestamp).toLocaleString()}</span></div>
+            <div>${escapeHtml(m.text)}</div>
         </div>
-      `;
-      
-      // Add event listener to handle clicks within the card
-      card.addEventListener('click', (e) => {
-        const action = e.target.dataset.action;
-        if (action === 'remove') {
-          handleDeleteListing(d._id, d.title);
-        } else {
-          showDetailModal(d);
-        }
-      });
+    `).join('');
+}
 
-      return card;
-    }
+function showDetailModal(listing) {
+    store.activeListing = listing;
+    qs('#detailTitle').textContent = listing.title;
+    
+    const isOwner = store.user && store.user.userId === listing.owner.userId;
+    const ownerName = escapeHtml(listing.owner.name);
+    
+    const priceDisplay = listing.type === 'Exchange' ? `<span class="price" style="color:var(--brand-2)">EXCHANGE</span>` 
+        : listing.type === 'Buy' ? `<span class="price" style="color:var(--brand-2)">WANT TO BUY</span>`
+        : `<span class="price" style="color:var(--brand)">₹ ${Number(listing.price).toLocaleString()}</span>`;
 
-    // --- Detail Modal Functions ---
-    const detailModal = qs('#detailModal');
-    const detailContent = qs('#detailContent');
-
-    function showDetailModal(listing) {
-        store.activeListing = listing;
-        qs('#detailTitle').textContent = listing.title;
-        
-        const isOwner = store.user && store.user.userId === listing.owner.userId;
-        const ownerName = escapeHtml(listing.owner.name);
-        const priceDisplay = listing.type === 'Exchange' 
-            ? `<span class="price" style="color:var(--brand-2)">EXCHANGE</span>`
-            : listing.type === 'Buy'
-            ? `<span class="price" style="color:var(--brand-2)">WANT TO BUY</span>`
-            : `<span class="price" style="color:var(--brand)">₹ ${Number(listing.price).toLocaleString()}</span>`;
-
-        detailContent.innerHTML = `
-            <div id="detailView">
-                <div id="detailMedia">
-                    <img id="detailImage" src="${listing.image || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="100%" height="100%" fill="var(--border)"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="var(--muted)" font-family="Inter" font-size="16">No Cover</text></svg>'}" alt="${escapeHtml(listing.title)} Cover">
-                </div>
-                <div id="detailInfo">
-                    <h1>${escapeHtml(listing.title)}</h1>
-                    <div class="fine" style="margin-bottom:15px">${escapeHtml(listing.author || 'Unknown')} • ${escapeHtml(listing.subject || 'General')}</div>
-                    ${priceDisplay}
-                    <p><strong>Type:</strong> <span class="tag" style="background:var(--brand); color:var(--bg);">${listing.type}</span></p>
-                    <p><strong>Condition:</strong> ${listing.condition}</p>
-                    <!-- Removed specific domain mention for generic email -->
-                    <p><strong>Posted By:</strong> ${ownerName}</p> 
-                    
-                    <h3 style="margin-top:20px; border-top:1px solid var(--border); padding-top:10px">Description</h3>
-                    <p>${escapeHtml(listing.description || 'No detailed description provided.')}</p>
-
-                    ${!isOwner ? `
-                        <div class="row" style="margin-top:20px">
-                            <a href="mailto:${listing.owner.email}?subject=${encodeURIComponent('Enquiry: ' + listing.title)}&body=${encodeURIComponent(`Hi ${ownerName}, I'm interested in your listing...`)}" class="btn ghost grow">Email Seller</a>
-                            <button class="btn brand grow" data-action="contact-seller">Send In-App Message</button>
-                        </div>` : `<div class="row" style="margin-top:20px"><button class="btn brand" style="background:#dc2626; width:100%" data-action="remove-listing-detail">Remove My Listing</button></div>`
-                    }
-                </div>
+    detailContent.innerHTML = `
+        <div id="detailView">
+            <div id="detailMedia">
+                <img id="detailImage" src="${listing.image || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="100%" height="100%" fill="var(--border)"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="var(--muted)" font-family="Inter" font-size="16">No Cover</text></svg>'}" alt="${escapeHtml(listing.title)} Cover">
             </div>
-            <div id="messageThread">
-                <h3 style="margin-bottom:15px">Messages (${listing.msgs.length})</h3>
-                <div id="messageList" class="col" style="gap:8px">${renderMessages(listing.msgs)}</div>
-                ${isOwner ? '<p class="fine">Messages are visible to the owner only.</p>' : ''}
+            <div id="detailInfo">
+                <h1>${escapeHtml(listing.title)}</h1>
+                <div class="fine" style="margin-bottom:15px">${escapeHtml(listing.author || 'Unknown')} • ${escapeHtml(listing.condition)}</div>
+                ${priceDisplay}
+                <div style="margin-top:10px; color:var(--muted)">Posted by: <strong>${ownerName}</strong> (${escapeHtml(listing.owner.email)})</div>
                 
-                ${!isOwner && store.user ? `
-                    <form id="messageForm" style="margin-top:20px">
-                        <textarea id="msgText" placeholder="Type your message to ${ownerName.split(' ')[0]}..." style="margin-bottom:10px"></textarea>
-                        <button class="btn brand" type="submit">Send Message</button>
-                    </form>` : ''
-                }
-                ${!isOwner && !store.user ? '<p class="fine" style="text-align:center; margin-top:20px">Sign in to send messages.</p>' : ''}
+                <p style="margin-top:20px">${escapeHtml(listing.description)}</p>
+
+                ${isOwner ? `<button class="btn brand" style="background:#dc2626; margin-top:20px" data-action="remove-detail">Remove Listing</button>` : ''}
+                
+                <div id="messageThread">
+                    <h3>Messages (${listing.msgs ? listing.msgs.length : 0}) ${isOwner ? '<span class="fine">(Only visible to you)</span>' : ''}</h3>
+                    <div id="messageList" style="max-height: 250px; overflow-y: auto; margin-bottom: 20px;">
+                        ${isOwner && listing.msgs ? renderMessages(listing.msgs) : '<p class="fine" style="text-align:center">Messages are only visible to the listing owner.</p>'}
+                    </div>
+                    
+                    ${store.user && !isOwner ? `
+                    <form id="messageForm">
+                        <label>Send a message to the seller</label>
+                        <textarea id="msgText" placeholder="I'm interested in this book, is it still available?" required></textarea>
+                        <div style="text-align:right; margin-top:10px">
+                            <button type="submit" class="btn brand">Send Message</button>
+                        </div>
+                    </form>` : store.user && isOwner ? '' : `
+                    <p class="fine" style="text-align:center">Please sign in to send a message to the seller.</p>
+                    <button class="btn brand" style="width:100%" onclick="openModal(authModal); closeModal(detailModal)">Sign In to Message</button>
+                    `}
+                </div>
             </div>
-        `;
-        
-        if (isOwner) {
-            // Only owners see the message list, non-owners get the form
-            qs('#messageList').style.display = 'block';
-        } else if (store.user) {
-            // Non-owner who is logged in sees the form, but only their own messages (for demo simplicity)
-             qs('#messageList').style.display = 'none'; // Only show messages to the owner for privacy simulation
-        } else {
-             qs('#messageList').style.display = 'none'; // Not logged in, hide all
-        }
+        </div>
+    `;
 
-        // Event listener for message submission
-        const messageForm = qs('#messageForm');
-        if (messageForm) {
-            messageForm.addEventListener('submit', handleAddMessage);
-        }
-
-        openModal(detailModal);
+    // Re-attach listeners for dynamically created form/buttons
+    const messageForm = qs('#messageForm');
+    if (messageForm) {
+        messageForm.addEventListener('submit', handleAddMessage);
     }
     
-    function renderMessages(msgs) {
-        if (!msgs || msgs.length === 0) return '<p class="fine" style="text-align:center">No messages yet.</p>';
-        return msgs.map(m => `
-            <div class="msg-item">
-                <div class="sender">${escapeHtml(m.by)} <span class="fine" style="float:right">${new Date(m.ts).toLocaleString()}</span></div>
-                <div>${escapeHtml(m.text)}</div>
-            </div>
-        `).join('');
+    // Listener for remove button inside detail view
+    qs('#detailContent').addEventListener('click', (e) => {
+        if (e.target.dataset.action === 'remove-detail' && store.activeListing) {
+            handleDeleteListing(store.activeListing._id, store.activeListing.title);
+            closeModal(detailModal); // Close modal after action initiated
+        }
+    });
+
+    openModal(detailModal);
+}
+
+// --- CRUD Handlers ---
+
+// 1. Add Listing
+const listingForm = qs('#listingForm');
+const imageInput = qs('#imageInput');
+const preview = qs('#preview'); 
+let previewBase64 = ''; 
+
+imageInput.addEventListener('change', (e)=>{
+    const f = e.target.files?.[0];
+    if(!f){
+        preview.style.display='none';
+        previewBase64='';
+        return
     }
+    const reader = new FileReader();
+    reader.onload = ()=>{
+        preview.src = reader.result;
+        preview.style.display='inline-block';
+        previewBase64 = reader.result; // Store Base64 string
+    }
+    reader.readAsDataURL(f);
+});
 
+listingForm.addEventListener('submit', handleListingSubmit);
 
-    // --- CRUD Handlers ---
-
-    // 1. Add Listing
-    const listingForm = qs('#listingForm');
-    const imageInput = qs('#imageInput');
-    const preview = qs('#preview');
-
-    let previewBase64 = '';
-    imageInput.addEventListener('change', (e)=>{
-      const f = e.target.files?.[0];
-      if(!f){ preview.style.display='none'; previewBase64=''; return }
-      const reader = new FileReader();
-      reader.onload = ()=>{ preview.src = reader.result; preview.style.display='inline-block'; previewBase64 = reader.result }
-      reader.readAsDataURL(f);
-    })
-
-    listingForm.addEventListener('submit', async e => {
-      e.preventDefault();
-      if (!store.user) {
-        showMessage('You must sign in to publish a listing.', 'warning');
+async function handleListingSubmit(e) {
+    e.preventDefault();
+    if (!store.user) {
+        showMessage('You must be signed in to add a listing.', 'error');
         openModal(authModal);
         return;
-      }
-      
-      const data = Object.fromEntries(new FormData(listingForm).entries());
-      const price = Number(data.price || 0);
-      
-      const newListing = {
-        title: data.title.trim(),
-        author: data.author.trim(),
-        subject: data.subject.trim(),
-        description: data.description.trim(),
-        type: data.type,
-        price: isNaN(price) ? 0 : price,
-        condition: data.condition,
-        image: previewBase64,
-        owner: {
-          name: store.user.name,
-          email: store.user.email,
-          userId: store.user.userId
-        },
-        msgs: []
-      }
+    }
+    
+    // Gather form data
+    const formData = new FormData(listingForm);
+    const payload = {
+        title: formData.get('title'),
+        author: formData.get('author'),
+        description: formData.get('description'),
+        price: formData.get('price'),
+        type: formData.get('type'),
+        condition: formData.get('condition'),
+        image: previewBase64, 
+    };
 
-      const response = await apiFetch('/books', {
+    const submitBtn = listingForm.querySelector('[type="submit"]');
+    submitBtn.disabled = true;
+
+    // POST /api/books - requires the Authorization header via apiFetch
+    const newBook = await apiFetch('/books', {
         method: 'POST',
-        body: JSON.stringify(newListing)
-      });
-      
-      if (response) {
-        // Update local cache and UI
-        store.listings.unshift(response);
-        listingForm.reset(); 
-        preview.style.display='none'; 
-        previewBase64='';
-        showMessage(`Listing "${newListing.title}" Published!`, 'success');
-        setView('my-listings');
-      }
+        body: JSON.stringify(payload)
     });
+    
+    submitBtn.disabled = false;
 
-    // 2. Delete Listing
-    async function handleDeleteListing(id, title) {
-      if (!store.user) return; 
-      if (!confirm(`Are you sure you want to remove the listing for "${title}"? This cannot be undone.`)) return;
+    if (newBook) {
+        showMessage(`Listing for "${newBook.title}" successfully published!`, 'success');
+        listingForm.reset();
+        qs('#preview').style.display = 'none';
+        previewBase64 = ''; 
+        
+        // Add the new book to the local cache and refresh all views
+        store.listings = [newBook, ...store.listings]; 
+        
+        renderListingsGrid();
+        renderMyListings();
+        updateHomeStats();
+        setView('listings');
+    }
+}
 
-      const response = await apiFetch(`/books/${id}`, { method: 'DELETE' });
-
-      if (response) {
-        // Remove from local cache
+// --- Delete Listing ---
+async function handleDeleteListing(id, title) {
+    if (!confirm(`Are you sure you want to delete the listing for "${title}"? This action cannot be undone.`)) {
+        return;
+    }
+    
+    const response = await apiFetch(`/books/${id}`, {
+        method: 'DELETE'
+    });
+    
+    if (response) {
+        showMessage('Listing deleted successfully.', 'success');
+        
+        // Optimistically update cache and re-render
         store.listings = store.listings.filter(d => d._id !== id);
-        showMessage(`Listing "${title}" removed.`, 'success');
-        
-        // Re-render the current view
-        if (store.currentView === 'my-listings') renderMyListings();
-        else renderListingsGrid();
-        
-        if (store.activeListing && store.activeListing._id === id) closeModal(detailModal);
-      }
+        renderMyListings(); 
+        renderListingsGrid(); 
+        updateHomeStats(); 
+    }
+}
+
+// 3. Add Message
+async function handleAddMessage(e) {
+  e.preventDefault();
+  if (!store.user || !store.activeListing) {
+      showMessage('Please sign in to send a message.', 'error');
+      openModal(authModal);
+      return;
+  }
+
+  const msgTextEl = qs('#msgText');
+  const text = msgTextEl.value.trim();
+  if (!text) return;
+
+  const messagePayload = {
+    text: text
+  };
+  
+  const submitBtn = e.target.querySelector('[type="submit"]');
+  submitBtn.disabled = true;
+
+  // POST /api/books/:id/message - requires Authorization header
+  const response = await apiFetch(`/books/${store.activeListing._id}/message`, {
+    method: 'POST',
+    body: JSON.stringify(messagePayload)
+  });
+  
+  submitBtn.disabled = false;
+
+  if (response) {
+    // Response is the new message object
+    
+    // Update the message array in the local cache
+    const localListing = store.listings.find(d => d._id === store.activeListing._id);
+    if (localListing) {
+        localListing.msgs.push(response);
+        store.activeListing.msgs.push(response); 
     }
     
-    // Attach event listener for the remove button in the detail modal
-    detailContent.addEventListener('click', (e) => {
-        if (e.target.dataset.action === 'remove-listing-detail' && store.activeListing) {
-            handleDeleteListing(store.activeListing._id, store.activeListing.title);
-        }
-    });
+    // Re-render the messages in the modal
+    qs('#messageList').innerHTML = renderMessages(store.activeListing.msgs);
+    msgTextEl.value = '';
+    showMessage('Message sent successfully. Only the owner can view it.', 'success');
+  }
+}
 
-    // 3. Add Message
-    async function handleAddMessage(e) {
-      e.preventDefault();
-      if (!store.user || !store.activeListing) return;
 
-      const msgTextEl = qs('#msgText');
-      const text = msgTextEl.value.trim();
-      if (!text) return;
-
-      const messagePayload = {
-        by: store.user.name,
-        text: text
-      };
-
-      const response = await apiFetch(`/books/${store.activeListing._id}/message`, {
-        method: 'POST',
-        body: JSON.stringify(messagePayload)
-      });
-
-      if (response) {
-        // Update the message array in the local cache
-        const localListing = store.listings.find(d => d._id === store.activeListing._id);
-        if (localListing) {
-            localListing.msgs.push(response);
-            store.activeListing.msgs.push(response);
-        }
-        
-        // Re-render the messages in the modal
-        qs('#messageList').innerHTML = renderMessages(store.activeListing.msgs);
-        msgTextEl.value = '';
-        showMessage('Message sent successfully. Only the owner can view it.', 'success');
-      }
-    }
+// --- Initialization ---
+document.addEventListener('DOMContentLoaded', () => {
+    // Check if user is already logged in from a previous session
+    updateAuthUI();
     
-    // --- Initial Load ---
-    document.addEventListener('DOMContentLoaded', () => {
-      updateAuthUI();
-      loadAndRenderListings();
-      setView('home'); // Start on the new Home page
-    });
-  </script>
-</body>
-</html>
+    // Load data from the MongoDB backend and render the default view
+    loadAndRenderListings();
+    setView(store.currentView);
+});
+</script>
