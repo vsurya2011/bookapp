@@ -106,6 +106,36 @@ app.get('/api/books', async (req, res) => {
   }
 });
 
+// GET /api/books/search: Search books by keyword in title, author, or subject
+app.get('/api/books/search', async (req, res) => {
+  try {
+    const { q } = req.query; // Get the query string parameter 'q'
+    
+    if (!q) {
+      // If no query parameter is provided, return an empty array or an error
+      return res.status(400).json({ error: 'Please provide a search query (q).' });
+    }
+
+    // Create a case-insensitive regular expression for searching
+    const searchRegex = new RegExp(q, 'i'); 
+
+    // Find books where the search term matches title, author, OR subject
+    const books = await Book.find({
+      $or: [
+        { title: { $regex: searchRegex } },
+        { author: { $regex: searchRegex } },
+        { subject: { $regex: searchRegex } },
+      ],
+    }).sort({ createdAt: -1 });
+
+    res.json(books);
+  } catch (err) {
+    console.error('Search error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 // POST /api/books: Add a book
 app.post('/api/books', async (req, res) => {
   try {
