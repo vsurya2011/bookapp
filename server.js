@@ -3,49 +3,63 @@ const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const path = require('path');
-const bcrypt = require('bcrypt'); // Required for secure password hashing
-const jwt = require('jsonwebtoken'); // Required for user session management
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-// *** CRITICAL SECURITY: Use Environment Variables ***
-const MONGO_URI = process.env.MONGO_URI; 
-// You MUST set this new secret key environment variable on Render!
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/bookhub';
 const JWT_SECRET = process.env.JWT_SECRET || 'your_default_secret_key_if_not_set'; 
 
-if (!MONGO_URI) {
-    console.error("FATAL ERROR: MONGO_URI environment variable is not set. Cannot connect to the database.");
-    process.exit(1); 
-}
+// --- Configuration ---
+const ALLOWED_DOMAIN = '@gmail.com';
 
 // 1. DATABASE CONNECTION
+if (!MONGO_URI) {
+    console.error('FATAL ERROR: MONGO_URI environment variable is not set. Cannot connect to the database.');
+    process.exit(1);
+}
+
 mongoose.connect(MONGO_URI)
   .then(() => console.log('MongoDB connected successfully.'))
-  .catch(err => {
-    console.error('MongoDB connection error. Please check MONGO_URI and network access:', err);
-    process.exit(1); 
-  });
+  .catch(err => console.error('MongoDB connection error. Please check your MONGO_URI and network access:', err));
+
 
 // 2. MONGOOSE SCHEMAS AND MODELS
 
-// NEW: User Schema for Authentication
+// User Schema & Model
 const UserSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     name: { type: String, required: true },
-    createdAt: { type: Date, default: Date.now }
 });
+
+// Utility method to generate JWT
+UserSchema.methods.createToken = function() {
+    return jwt.sign(
+        { userId: this._id, name: this.name, email: this.email },
+        JWT_SECRET,
+        { expiresIn: '7d' } // Token expires in 7 days
+    );
+};
+
 const User = mongoose.model('User', UserSchema);
 
-// Existing Book Schema
+// Book Schema & Model
 const BookSchema = new mongoose.Schema({
     title: { type: String, required: true },
     author: { type: String, required: true },
     description: { type: String, required: true },
     price: { type: Number, required: true },
     exchange: { type: Boolean, default: false },
-    owner: { type: String, required: true }, 
+    type: { type: String, required: true },
+    condition: { type: String, default: 'Good' },
+    image: { type: String },
+    owner: { 
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+        name: { type: String, required: true },
+        email: { type: String, required: true }
+    }, 
     msgs: [{
         by: String,
         text: String,
@@ -58,18 +72,40 @@ const Book = mongoose.model('Book', BookSchema);
 
 // 3. MIDDLEWARE SETUP
 app.use(cors()); 
-app.use(bodyParser.json()); 
+app.use(bodyParser.json({ limit: '50mb' })); 
 
+// Utility to send standardized JSON responses
 const sendResponse = (res, data, message = 'Success', success = true, status = 200) => {
     res.status(status).json({ success, message, data });
 };
 
-// 4. API ROUTES (Grouped under /api)
+// --- Authentication Middleware ---
+const authenticateToken = (req, res, next) => {
+    // Get token from the Authorization header (Bearer <token>)
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (token == null) {
+        return sendResponse(res, null, 'Authentication token required.', false, 401);
+    }
+
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) {
+            return sendResponse(res, null, 'Invalid or expired token.', false, 403);
+        }
+        req.user = user; // Attach user payload (userId, name, email) to the request
+        next();
+    });
+};
+
+// 4. API ROUTES
 const apiRouter = express.Router();
 
-// --- AUTH/USER ROUTES (FULL IMPLEMENTATION) ---
+// ----------------------------------------------------
+// --- AUTH/USER ROUTES ---
+// ----------------------------------------------------
 
-// POST /api/auth/signup - Actual Registration Logic
+// POST /api/auth/signup - User registration
 apiRouter.post('/auth/signup', async (req, res) => {
     const { email, password, name } = req.body;
     
@@ -77,127 +113,167 @@ apiRouter.post('/auth/signup', async (req, res) => {
         return sendResponse(res, null, 'Please provide name, email, and password.', false, 400);
     }
     
+    // Email domain validation
+    if (!email.endsWith(ALLOWED_DOMAIN)) {
+        return sendResponse(res, null, `Only emails ending with ${ALLOWED_DOMAIN} are allowed.`, false, 400);
+    }
+
     try {
         // 1. Check if user already exists
-        const existingUser = await User.findOne({ email });
-        if (existingUser) {
-            return sendResponse(res, null, 'User with this email already exists.', false, 409);
+        let user = await User.findOne({ email });
+        if (user) {
+            return sendResponse(res, null, 'Account already exists. Please log in.', false, 409);
         }
 
-        // 2. Hash the password before saving
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
+        // 2. Hash the password
+        const hashedPassword = await bcrypt.hash(password, 10);
 
-        // 3. Create and save the new user
-        const newUser = new User({
-            email,
-            password: hashedPassword,
-            name
-        });
-        await newUser.save();
-        
-        // 4. Issue a token (JWT)
-        const token = jwt.sign({ userId: newUser._id, name: newUser.name, email: newUser.email }, JWT_SECRET, { expiresIn: '7d' });
+        // 3. Create new user
+        user = new User({ email, password: hashedPassword, name });
+        await user.save();
 
-        const userData = {
-            id: newUser._id,
-            name: newUser.name,
-            email: newUser.email,
-            token: token // The client MUST store this token
-        };
+        // 4. Create and return JWT
+        const token = user.createToken();
+        const userData = { userId: user._id, name: user.name, email: user.email, token };
 
-        sendResponse(res, userData, 'Signup successful. User created.', true, 201);
+        sendResponse(res, userData, 'Account created and logged in.', true, 201);
     } catch (error) {
         console.error('Signup Error:', error);
-        // MongoDB error (e.g., validation failure)
-        sendResponse(res, null, 'Server error during registration.', false, 500); 
+        sendResponse(res, null, 'Signup failed due to a server error.', false, 500);
     }
 });
 
-// POST /api/auth/login - Actual Login Logic
+// POST /api/auth/login - User login
 apiRouter.post('/auth/login', async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
         return sendResponse(res, null, 'Please provide email and password.', false, 400);
     }
-
+    
     try {
-        // 1. Find the user by email
+        // 1. Find user
         const user = await User.findOne({ email });
         if (!user) {
             return sendResponse(res, null, 'Invalid credentials.', false, 401);
         }
 
-        // 2. Compare the provided password with the stored hashed password
+        // 2. Compare password
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return sendResponse(res, null, 'Invalid credentials.', false, 401);
         }
 
-        // 3. Issue a token (JWT)
-        const token = jwt.sign({ userId: user._id, name: user.name, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
+        // 3. Create and return JWT
+        const token = user.createToken();
+        const userData = { userId: user._id, name: user.name, email: user.email, token };
 
-        const userData = {
-            id: user._id,
-            name: user.name,
-            email: user.email,
-            token: token // The client MUST store this token
-        };
-        
         sendResponse(res, userData, 'Login successful.', true, 200);
     } catch (error) {
         console.error('Login Error:', error);
-        sendResponse(res, null, 'Server error during login.', false, 500);
+        sendResponse(res, null, 'Login failed due to a server error.', false, 500);
     }
 });
 
 
-// --- BOOKS/LISTING ROUTES (No changes, they work with the new user model) ---
+// ----------------------------------------------------
+// --- BOOKS/LISTING ROUTES ---
+// ----------------------------------------------------
+
+// POST /api/books - Add a new listing (PROTECTED)
+apiRouter.post('/books', authenticateToken, async (req, res) => {
+    // req.user is set by authenticateToken middleware
+    const { title, author, description, price, type, condition, image } = req.body;
+
+    // Minimal validation
+    if (!title || !description || !type || price == null) {
+        return sendResponse(res, null, 'Missing required fields: title, description, type, price.', false, 400);
+    }
+
+    try {
+        const newBook = new Book({
+            title,
+            author,
+            description,
+            price: Number(price),
+            type,
+            condition,
+            image,
+            // Owner details are pulled securely from the authenticated token payload
+            owner: {
+                userId: req.user.userId,
+                name: req.user.name,
+                email: req.user.email
+            },
+            exchange: type === 'Exchange' 
+        });
+
+        const savedBook = await newBook.save();
+        sendResponse(res, savedBook, 'Listing published successfully.', true, 201);
+    } catch (error) {
+        console.error('Add Listing Error:', error);
+        sendResponse(res, null, 'Failed to publish listing.', false, 500);
+    }
+});
+
+// GET /api/books - Get all listings (PUBLIC - viewable by everyone)
 apiRouter.get('/books', async (req, res) => {
     try {
-        const books = await Book.find().sort({ createdAt: -1 });
-        res.json(books); 
+        // Find all books and return them, sorted by newest first. Exclude 'msgs' for the main list.
+        const books = await Book.find().sort({ createdAt: -1 }).select('-msgs'); 
+        // Client expects an array of books, so we send the array directly
+        res.status(200).json(books); 
     } catch (error) {
-        sendResponse(res, null, 'Failed to fetch books', false, 500);
+        console.error('Get Books Error:', error);
+        sendResponse(res, null, 'Failed to fetch listings.', false, 500);
     }
 });
 
-apiRouter.post('/books', async (req, res) => {
+
+// DELETE /api/books/:id - Delete a listing (PROTECTED - only by owner)
+apiRouter.delete('/books/:id', authenticateToken, async (req, res) => {
     try {
-        const newBook = new Book(req.body);
-        await newBook.save();
-        res.status(201).json(newBook);
+        const bookId = req.params.id;
+        
+        const book = await Book.findById(bookId);
+        if (!book) {
+            return sendResponse(res, null, 'Listing not found.', false, 404);
+        }
+
+        if (book.owner.userId.toString() !== req.user.userId) {
+            return sendResponse(res, null, 'Unauthorized. Only the owner can delete this listing.', false, 403);
+        }
+
+        await Book.deleteOne({ _id: bookId });
+        sendResponse(res, null, 'Listing deleted successfully.', true, 200);
     } catch (error) {
-        sendResponse(res, null, 'Failed to create book', false, 500);
+        console.error('Delete Listing Error:', error);
+        sendResponse(res, null, 'Failed to delete listing.', false, 500);
     }
 });
 
-apiRouter.delete('/books/:id', async (req, res) => {
+// POST /api/books/:id/message - Add a message to a listing (PROTECTED)
+apiRouter.post('/books/:id/message', authenticateToken, async (req, res) => {
     try {
-        const deletedBook = await Book.findByIdAndDelete(req.params.id);
-        if (!deletedBook) return sendResponse(res, null, 'Book not found', false, 404);
-        res.json({ id: req.params.id, message: 'Book deleted successfully' });
-    } catch (error) {
-        sendResponse(res, null, 'Failed to delete book', false, 500);
-    }
-});
-
-apiRouter.post('/books/:id/message', async (req, res) => {
-    try {
-        const { by, text } = req.body;
+        const { text } = req.body;
+        const by = req.user.name; 
         const book = await Book.findById(req.params.id);
+        
         if (!book) return sendResponse(res, null, 'Listing not found', false, 404);
+        if (!text) return sendResponse(res, null, 'Message text is required', false, 400);
 
-        const newMessage = { by, text };
+        const newMessage = { by, text, timestamp: new Date() }; 
         book.msgs.push(newMessage);
         await book.save();
+        
         res.status(201).json(book.msgs[book.msgs.length - 1]);
     } catch (error) {
+        console.error('Add Message Error:', error);
         sendResponse(res, null, 'Failed to add message', false, 500);
     }
 });
 
+// Attach the API router
 app.use('/api', apiRouter);
 
 // 5. STATIC FILE SERVING
@@ -206,7 +282,7 @@ app.use(express.static(path.join(__dirname, '/')));
 // 6. CATCH-ALL ROUTE FOR SINGLE PAGE APPLICATION (SPA)
 app.get('*', (req, res) => {
     if (req.originalUrl.startsWith('/api/')) {
-        return sendResponse(res, null, 'API Route Not Found', false, 404);
+        return sendResponse(res, null, 'API Endpoint not found.', false, 404);
     }
     res.sendFile(path.join(__dirname, 'index.html'));
 });
