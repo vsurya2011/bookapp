@@ -62,6 +62,11 @@ const Book = mongoose.model('Book', BookSchema);
 // --- Routes ---
 // -------------------------------------------------------------
 
+// NEW ROOT ROUTE ADDED: Handles the default request for the server's root URL
+app.get('/', (req, res) => {
+  res.send('Book Hub API is running. Use /api/books or /api/auth/login to interact with the database.');
+});
+
 // 1. --- AUTHENTICATION ROUTES (SIMULATED) ---
 
 app.post('/api/auth/login', async (req, res) => {
