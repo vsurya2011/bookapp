@@ -3,256 +3,335 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Used Books Hub — College Buy/Sell/Exchange</title>
+  <title>Book Hub — Modern Dashboard</title>
   <style>
-    /* ----------------- New & Improved Styling ----------------- */
+    /* ----------------- Theme Variables ----------------- */
     :root{
-      --bg:#020617; /* slate-950 (Darker background) */
-      --card:#0f172a; /* slate-900 */
-      --muted:#94a3b8; /* slate-400 */
-      --text:#f8fafc; /* gray-50 */
-      --brand:#34d399; /* emerald-400 (New Brand Green) */
-      --brand-2:#6366f1; /* indigo-500 */
-      --danger:#f87171; /* red-400 */
-      --warn:#fbbf24; /* amber-400 */
-      --ok:#4ade80; /* green-400 */
-      --chip:#1e293b; /* slate-800 */
-      --shadow: 0 15px 35px rgba(0,0,0,.5);
-      --radius: 12px;
+      /* Dark Theme */
+      --bg: #0f172a; /* slate-900 */
+      --card: #1e293b; /* slate-800 */
+      --border: #334155; /* slate-700 */
+      --text: #f1f5f9; /* slate-100 */
+      --muted: #94a3b8; /* slate-400 */
+      --brand: #34d399; /* emerald-400 */
+      --brand-2: #6366f1; /* indigo-500 */
+      --shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
+    .light-theme {
+      /* Light Theme */
+      --bg: #f8fafc; /* slate-50 */
+      --card: #ffffff;
+      --border: #e2e8f0; /* slate-200 */
+      --text: #0f172a; /* slate-900 */
+      --muted: #64748b; /* slate-500 */
+      --brand: #059669; /* emerald-600 */
+      --brand-2: #4f46e5; /* indigo-600 */
+      --shadow: 0 10px 30px rgba(0,0,0,0.15);
+    }
+    /* ----------------- Global Styles ----------------- */
     *{box-sizing:border-box}
     html,body{height:100%}
-    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
-    header{position:sticky;top:0;background:rgba(2,6,23,.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--chip);z-index:5}
+    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;transition:background .3s, color .3s}
+    
     .container{max-width:1200px;margin:0 auto;padding:16px}
     .row{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+    .col{display:flex;flex-direction:column;gap:14px}
     .grow{flex:1}
-    .brand{display:flex;align-items:center;gap:10px;font-weight:900;letter-spacing:.5px;font-size:1.2rem}
-    .brand span{background:linear-gradient(135deg,var(--brand),var(--brand-2));-webkit-background-clip:text;background-clip:text;color:transparent}
-    .btn{appearance:none;border:0;border-radius:999px;padding:10px 18px;font-weight:600;color:var(--card);background:var(--text);cursor:pointer;transition:transform .1s ease,box-shadow .2s ease;box-shadow:0 3px 10px rgba(0,0,0,.2);display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
-    .btn:hover{transform:translateY(-1px);box-shadow:0 5px 15px rgba(0,0,0,.3)}
-    .btn.ghost{background:transparent;color:var(--text);border:1px solid var(--chip);box-shadow:none}
-    .btn.ghost:hover{background:var(--chip)}
-    .btn.brand{background:linear-gradient(135deg,var(--brand-2),var(--brand));color:var(--card)}
-    .btn.danger{background:var(--danger);color:var(--text)}
-    .tag{background:var(--chip);border:1px solid #334155;color:var(--muted);padding:6px 10px;border-radius:999px;font-size:.85rem;font-weight:500}
-    .pill{padding:3px 9px;border-radius:999px;background:#1e293b;border:1px solid #334155;color:var(--brand);font-size:.75rem}
 
-    main{max-width:1200px;margin:32px auto;padding:0 16px;display:grid;grid-template-columns:300px 1fr;gap:24px}
-    @media (max-width: 1000px){main{grid-template-columns:1fr}}
+    /* ----------------- Header & Navigation ----------------- */
+    header{position:sticky;top:0;background:var(--bg);backdrop-filter:blur(5px);border-bottom:1px solid var(--border);z-index:5;box-shadow:0 2px 10px rgba(0,0,0,.1)}
+    .nav-link{padding:8px 12px;border-radius:6px;font-weight:600;color:var(--muted);cursor:pointer;transition:color .2s, background .2s}
+    .nav-link:hover{color:var(--text)}
+    .nav-link.active{background:var(--card);color:var(--brand)}
+    .nav-link.active:hover{color:var(--brand)}
+    .brand{display:flex;align-items:center;gap:8px;font-weight:900;letter-spacing:.5px;font-size:1.3rem;color:var(--text)}
+    .brand span{color:var(--brand)}
+    /* *UPDATED: Changed brand name from Used Books Hub to Book Hub* */
+    .brand{font-size:1.6rem}
 
-    .card{background:var(--card);border:1px solid var(--chip);border-radius:var(--radius);box-shadow:var(--shadow)}
-    .card .hd{padding:18px 20px;border-bottom:1px solid var(--chip);font-weight:700;font-size:1.1rem;color:var(--brand-2)}
-    .card .bd{padding:20px}
+    /* ----------------- Buttons ----------------- */
+    .btn{appearance:none;border:0;border-radius:999px;padding:10px 18px;font-weight:600;cursor:pointer;transition:transform .1s ease, box-shadow .2s ease, opacity .2s;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
+    .btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 5px 15px rgba(0,0,0,.2)}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    .btn.brand{background:var(--brand);color:var(--bg);box-shadow:0 4px 15px rgba(52, 211, 153, 0.4)}
+    .btn.ghost{background:transparent;color:var(--text);border:1px solid var(--border);box-shadow:none}
+    .btn.ghost:hover:not(:disabled){background:var(--card)}
+    .btn.google{background:var(--text);color:#111827;border:1px solid var(--border);box-shadow:none;width:100%;font-weight:600;padding:12px 18px}
+    .btn.google:hover{background:#f3f4f6;transform:none}
+    .btn.circle{width:40px;height:40px;padding:0;border-radius:50%;border:1px solid var(--border)}
 
-    /* Filters */
-    .filters input,.filters select{width:100%;padding:12px 14px;margin-bottom:12px;border-radius:10px;border:1px solid var(--chip);background:var(--bg);color:var(--text)}
+    /* ----------------- Layout & Cards ----------------- */
+    main{max-width:1200px;margin:32px auto 60px;padding:0 16px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);padding:24px}
+    .hd-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+    .hd-row h2{margin:0;font-size:1.5rem;color:var(--brand-2)}
 
-    /* Grid */
+    /* ----------------- Listing Grid ----------------- */
     .grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));gap:24px}
-    .listing{display:flex;flex-direction:column;border-radius:14px;overflow:hidden;background:var(--bg);border:1px solid var(--chip);transition:box-shadow .2s ease, transform .1s ease;box-shadow:0 0 10px rgba(0,0,0,.15)}
-    .listing:hover{box-shadow:0 5px 20px rgba(0,0,0,.4);transform:translateY(-2px)}
-    .listing img{width:100%;height:180px;object-fit:cover;background:var(--chip);border-bottom:1px solid var(--chip)}
-    .listing .info{padding:16px;display:flex;flex-direction:column;gap:10px;flex-grow:1}
-    .price{font-weight:900;font-size:1.5rem;color:var(--brand)}
-    .meta{display:flex;gap:10px;flex-wrap:wrap}
-    .listing h3{margin:0;font-size:1.2rem;line-height:1.4}
-    .listing .fine{font-size:.85rem}
-    .listing .actions{margin-top:auto;padding-top:10px;border-top:1px solid var(--chip);display:flex;gap:10px}
-    .listing .actions .btn{padding:8px 12px;font-size:.9rem}
-
-    /* Forms */
+    .listing-card{display:flex;flex-direction:column;border-radius:14px;overflow:hidden;background:var(--bg);border:1px solid var(--border);transition:box-shadow .2s ease, transform .1s ease;box-shadow:0 0 10px rgba(0,0,0,.1);cursor:pointer}
+    .light-theme .listing-card{box-shadow:0 0 10px rgba(0,0,0,.05)}
+    .listing-card:hover{box-shadow:0 8px 25px rgba(0,0,0,.3);transform:translateY(-4px)}
+    .listing-card img{width:100%;height:180px;object-fit:cover;background:var(--border);border-bottom:1px solid var(--border)}
+    .listing-card .info{padding:16px;display:flex;flex-direction:column;gap:8px;flex-grow:1}
+    .price{font-weight:900;font-size:1.4rem;color:var(--brand)}
+    .meta{display:flex;gap:10px;flex-wrap:wrap;font-size:.85rem;color:var(--muted)}
+    .listing-card h3{margin:0;font-size:1.1rem;line-height:1.4;color:var(--text)}
+    .tag{background:var(--border);padding:4px 8px;border-radius:999px;font-size:.75rem;font-weight:600}
+    .fine{font-size:.9rem;color:var(--muted)}
+    
+    /* ----------------- Forms ----------------- */
     label{font-size:.9rem;color:var(--muted);font-weight:500}
-    input[type="text"],input[type="number"],input[type="email"],textarea,select{width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--chip);background:var(--bg);color:var(--text);margin-top:6px;font-size:1rem}
+    input[type="text"],input[type="number"],input[type="email"],textarea,select{width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);margin-top:6px;font-size:1rem;transition:border-color .2s}
+    input:focus, textarea:focus, select:focus{border-color:var(--brand-2);outline:none}
     textarea{min-height:90px}
     .form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
     @media (max-width: 720px){.form-grid{grid-template-columns:1fr}}
 
-    /* Modals (Responsive & Clean) */
-    .modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;padding:20px;z-index:50;overflow-y:auto}
-    .modal .panel{width:min(400px,96vw);background:var(--card);border:1px solid var(--chip);border-radius:18px;box-shadow:var(--shadow)}
-    #contactModal .panel{width:min(640px,96vw)}
-    #aboutModal .panel{width:min(550px,96vw)}
-
-    .modal .panel .hd{display:flex;justify-content:space-between;align-items:center;padding:18px 20px;border-bottom:1px solid var(--chip);font-weight:700}
+    /* ----------------- Modals ----------------- */
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;padding:20px;z-index:50}
+    .modal .panel{width:min(400px,96vw);background:var(--card);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow)}
+    .modal .panel .hd{display:flex;justify-content:space-between;align-items:center;padding:18px 20px;border-bottom:1px solid var(--border);font-weight:700}
     .modal .panel .bd{padding:20px}
-    .modal-subtitle{font-size:.9rem;color:var(--muted);margin-bottom:20px}
-
-    /* Login Modal Specific Styles */
-    #loginForm label{margin-top:10px;display:block}
-    .google-btn{background:white;color:#111827;border:1px solid #e5e7eb;box-shadow:none;width:100%;margin-bottom:10px;font-weight:600;padding:12px 18px}
-    .google-btn:hover{background:#f3f4f6;transform:none}
-    .google-btn svg{width:18px;height:18px}
     .divider{display:flex;align-items:center;text-align:center;color:var(--muted);margin:20px 0}
-    .divider::before,.divider::after{content:'';flex:1;border-bottom:1px solid var(--chip);margin:0 10px}
-
-    .empty{padding:24px;text-align:center;color:var(--muted);font-size:1.1rem;margin-top:40px}
-    footer{max-width:1200px;margin:30px auto 60px;color:#8b9bc7;opacity:.9;padding:0 16px}
-    a{color:var(--brand)}
-    .fine{font-size:.9rem;color:var(--muted)}
-    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    .divider::before,.divider::after{content:'';flex:1;border-bottom:1px solid var(--border);margin:0 10px}
     
-    /* Message Thread */
-    .msg-item{border:1px solid #1f2937;padding:10px 12px;border-radius:10px;margin:8px 0;background:#0e1328;line-height:1.4}
+    /* Detail View Styles */
+    #detailView{display:grid;grid-template-columns:40% 1fr;gap:30px;padding:30px;align-items:flex-start}
+    @media (max-width: 900px){#detailView{grid-template-columns:1fr;padding:15px}}
+    #detailImage{width:100%;border-radius:10px;border:1px solid var(--border);object-fit:cover;max-height:450px}
+    #detailInfo h1{margin-top:0;font-size:2rem;line-height:1.2}
+    #detailInfo .price{font-size:2rem}
+    #detailInfo p{font-size:1rem;color:var(--text)}
+    #messageThread{margin-top:20px;border-top:1px solid var(--border);padding-top:20px}
+    .msg-item{background:var(--bg);border:1px solid var(--border);padding:10px;border-radius:8px;margin-bottom:10px}
     .msg-item .sender{font-weight:700;color:var(--brand)}
+    
+    /* Home View */
+    #homeView .hero{background:linear-gradient(135deg, var(--brand-2) 0%, var(--brand) 100%);padding:60px 40px;border-radius:12px;color:#fff;text-align:center;margin-bottom:30px;box-shadow:var(--shadow)}
+    #homeView .hero h1{font-size:2.5rem;margin:0 0 10px}
+    #homeView .hero p{font-size:1.2rem;margin-bottom:20px}
+    .stat-card{text-align:center;padding:20px;background:var(--bg);border:1px solid var(--border);border-radius:10px}
+    .stat-card .num{font-size:2.5rem;font-weight:900;color:var(--brand-2);margin:0}
+    .stat-card .label{color:var(--muted)}
+    
+    /* Utility */
+    .hidden{display:none}
   </style>
 </head>
 <body>
   <header>
     <div class="container row">
-      <div class="brand">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 4h9a4 4 0 0 1 0 8H5V4Zm0 8h11a4 4 0 1 1 0 8H5v-8Z" stroke="var(--brand)" stroke-width="1.3"/></svg>
-        <div>Used Books <span>Hub</span></div>
-        <span class="pill" id="domainPill">domain: @college.edu</span>
+      <!-- *UPDATED: Book Hub Name* -->
+      <a href="#" class="brand" onclick="setView('home'); return false;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V5H6.5A2.5 2.5 0 0 0 4 7.5v12z"/><path d="M12 11h4"/><path d="M12 15h4"/></svg>
+        Book <span>Hub</span>
+      </a>
+      
+      <div class="row grow" id="navLinks">
+        <div class="nav-link active" data-view="home">Home</div>
+        <div class="nav-link" data-view="listings">All Books</div>
+        <div class="nav-link" data-view="my-listings">My Books</div>
+        <div class="nav-link" data-view="add-listing">Add Listing</div>
       </div>
-      <div class="grow"></div>
-      <button class="btn ghost" id="aboutBtn">About</button>
-      <button class="btn brand" id="loginBtn"><span id="loginLabel">Sign In</span></button>
+      
+      <div class="row">
+        <button class="btn circle ghost" id="themeToggle" title="Toggle Light/Dark Theme">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>
+        </button>
+        <button class="btn brand" id="authBtn">Sign In</button>
+      </div>
     </div>
   </header>
 
   <main>
-    <section class="card">
-      <div class="hd">Filter Listings</div>
-      <div class="bd filters">
-        <input id="q" type="text" placeholder="Search by title, author, course, subject…" />
-        <div class="row">
-          <select id="typeFilter" class="grow">
-            <option value="">All types</option>
-            <option>Sell</option>
-            <option>Buy</option>
-            <option>Exchange</option>
-          </select>
-          <select id="condFilter" class="grow">
-            <option value="">Any condition</option>
-            <option>Like New</option>
-            <option>Good</option>
-            <option>Fair</option>
-          </select>
+    <!-- View Container -->
+    <div id="viewContainer">
+      <!-- 1. Home View -->
+      <section id="homeView" class="hidden">
+        <!-- *UPDATED: Book Hub Name* -->
+        <div class="hero">
+          <h1>Welcome to the Book Hub</h1>
+          <p>Securely buy, sell, and exchange books using a verified email network.</p>
+          <button class="btn brand" style="color:white" onclick="setView('listings')">Browse All Listings</button>
         </div>
-        <div class="row">
-          <input id="minPrice" type="number" placeholder="Min price (₹)" />
-          <input id="maxPrice" type="number" placeholder="Max price (₹)" />
+        <div class="hd-row"><h2>Platform Stats</h2></div>
+        <div class="grid" style="grid-template-columns:repeat(auto-fit, minmax(200px, 1fr))">
+          <div class="stat-card"><p class="num" id="statTotalBooks">0</p><p class="label">Total Books Listed</p></div>
+          <div class="stat-card"><p class="num" id="statTotalUsers">1</p><p class="label">Verified Users (Demo)</p></div>
+          <div class="stat-card"><p class="num">~75%</p><p class="label">Average Discount</p></div>
+          <div class="stat-card"><p class="num" id="statMyListings">0</p><p class="label">Your Active Listings</p></div>
         </div>
-        <div class="row">
-          <select id="sortBy" class="grow">
-            <option value="new">Newest</option>
-            <option value="priceAsc">Price: Low to High</option>
-            <option value="priceDesc">Price: High to Low</option>
-            <option value="title">Title A→Z</option>
-          </select>
-          <button class="btn ghost" id="clearFilters">Clear</button>
+        <div class="hd-row" style="margin-top:30px"><h2>How It Works</h2></div>
+        <div class="grid" style="grid-template-columns:1fr 1fr">
+          <div class="card">
+            <!-- *UPDATED: Email Verification Title* -->
+            <h3>Email Verification</h3>
+            <!-- *UPDATED: Email Domain Text* -->
+            <p class="fine">All users must verify their identity using a <code>@gmail.com</code> domain email, ensuring a trusted environment for transactions.</p>
+          </div>
+          <div class="card">
+            <h3>Direct Contact & Secure Exchange</h3>
+            <p class="fine">Contact sellers directly using our in-app messenger or email draft. Set up your exchange safely.</p>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <section class="card" id="addCard">
-      <div class="hd">List a Book</div>
-      <div class="bd">
-        <form id="listingForm">
-          <div class="form-grid">
-            <div>
-              <label>Type
-                <select name="type" required>
+      <!-- 2. All Books (Listings) View -->
+      <section id="listingsView" class="hidden">
+        <div class="hd-row"><h2>All Available Listings</h2></div>
+        
+        <!-- Filters (combined with the main listings view) -->
+        <div class="card col" style="margin-bottom:20px; padding:15px 24px">
+          <div class="row" style="gap:16px; flex-wrap:wrap">
+              <input id="q" type="text" placeholder="Search by title, author, course, subject…" class="grow" />
+              <select id="typeFilter" style="width:150px">
+                  <option value="">Type (All)</option>
                   <option>Sell</option>
                   <option>Buy</option>
                   <option>Exchange</option>
-                </select>
-              </label>
-            </div>
-            <div>
-              <label>Price (₹) <span class="fine">(0 for Exchange/Want-to-Buy)</span>
-                <input name="price" type="number" min="0" value="0" required />
-              </label>
-            </div>
-            <div>
-              <label>Title
-                <input name="title" type="text" required placeholder="e.g., Data Structures in C" />
-              </label>
-            </div>
-            <div>
-              <label>Author
-                <input name="author" type="text" placeholder="e.g., Seymour Lipschutz" />
-              </label>
-            </div>
-            <div>
-              <label>Course/Subject
-                <input name="subject" type="text" placeholder="e.g., CSE201 / Algorithms" />
-              </label>
-            </div>
-            <div>
-              <label>Condition
-                <select name="condition">
+              </select>
+              <select id="condFilter" style="width:150px">
+                  <option value="">Condition (Any)</option>
                   <option>Like New</option>
                   <option>Good</option>
                   <option>Fair</option>
-                </select>
-              </label>
-            </div>
+              </select>
+              <select id="sortBy" style="width:150px">
+                  <option value="new">Newest</option>
+                  <option value="priceAsc">Price: Low to High</option>
+                  <option value="priceDesc">Price: High to Low</option>
+                  <option value="title">Title A→Z</option>
+              </select>
+              <button class="btn ghost" id="clearFilters">Clear</button>
           </div>
+        </div>
 
-          <label style="margin-top:16px;display:block">Description
-            <textarea name="description" placeholder="Edition, highlights, notes, exchange preferences, etc."></textarea>
-          </label>
+        <div id="listingsGrid" class="grid"></div>
+        <div id="emptyListings" class="card hidden" style="text-align:center; padding:40px; margin-top:30px">
+          <p class="fine">No books match your current filters. Be the first to list a book!</p>
+        </div>
+      </section>
+      
+      <!-- 3. My Books View -->
+      <section id="myListingsView" class="hidden">
+        <div class="hd-row"><h2>Your Active Listings <span id="myListingsCount" class="tag">0</span></h2></div>
+        <div id="myListingsGrid" class="grid"></div>
+        <div id="emptyMyListings" class="card hidden" style="text-align:center; padding:40px; margin-top:30px">
+          <p class="fine">You haven't posted any books yet. <a href="#" onclick="setView('add-listing'); return false;">List your first book now!</a></p>
+        </div>
+      </section>
 
-          <div class="row" style="margin-top:16px;align-items:flex-end">
-            <div style="flex-grow:0.5">
-              <label>Cover Image
-                <input name="image" id="imageInput" type="file" accept="image/*" />
-              </label>
+      <!-- 4. Add Listing View -->
+      <section id="addListingView" class="hidden">
+        <div class="hd-row"><h2>Add a New Book Listing</h2></div>
+        <div class="card">
+          <form id="listingForm">
+            <div class="form-grid">
+              <div>
+                <label>Type
+                  <select name="type" required>
+                    <option>Sell</option>
+                    <option>Buy</option>
+                    <option>Exchange</option>
+                  </select>
+                </label>
+              </div>
+              <div>
+                <label>Price (₹) <span class="fine">(0 for Exchange/Want-to-Buy)</span>
+                  <input name="price" type="number" min="0" value="0" required />
+                </label>
+              </div>
+              <div>
+                <label>Title
+                  <input name="title" type="text" required placeholder="e.g., Data Structures in C" />
+                </label>
+              </div>
+              <div>
+                <label>Author
+                  <input name="author" type="text" placeholder="e.g., Seymour Lipschutz" />
+                </label>
+              </div>
+              <div>
+                <label>Course/Subject
+                  <input name="subject" type="text" placeholder="e.g., CSE201 / Algorithms" />
+                </label>
+              </div>
+              <div>
+                <label>Condition
+                  <select name="condition">
+                    <option>Like New</option>
+                    <option>Good</option>
+                    <option>Fair</option>
+                  </select>
+                </label>
+              </div>
             </div>
-            <img id="preview" alt="Preview" style="width:80px;height:80px;object-fit:cover;border-radius:10px;border:1px solid var(--chip);margin-left:8px;display:none" />
-            <div class="grow"></div>
-            <button class="btn brand" type="submit">Publish Listing</button>
-          </div>
-        </form>
-      </div>
-    </section>
 
-    <section class="card" style="grid-column:1/-1">
-      <div class="hd">Available Books</div>
-      <div class="bd">
-        <div id="listings" class="grid"></div>
-        <div id="empty" class="empty" style="display:none">No listings match your filters yet.</div>
+            <label style="margin-top:16px;display:block">Description
+              <textarea name="description" placeholder="Edition, highlights, notes, exchange preferences, etc."></textarea>
+            </label>
+
+            <div class="row" style="margin-top:16px;align-items:flex-end">
+              <div style="flex-grow:0.5">
+                <label>Cover Image
+                  <input name="image" id="imageInput" type="file" accept="image/*" />
+                </label>
+              </div>
+              <img id="preview" alt="Preview" style="width:80px;height:80px;object-fit:cover;border-radius:10px;border:1px solid var(--border);margin-left:8px;display:none" />
+              <div class="grow"></div>
+              <button class="btn brand" type="submit">Publish Listing</button>
+            </div>
+          </form>
+        </div>
+      </section>
+      
+      <!-- Detail Modal -->
+      <div id="detailModal" class="modal">
+        <div class="panel" style="width:min(900px, 96vw)">
+          <div class="hd">
+            <span id="detailTitle">Listing Details</span>
+            <button class="btn ghost" onclick="closeModal(detailModal)">Close</button>
+          </div>
+          <div class="bd" id="detailContent">
+            <!-- Content loaded dynamically -->
+          </div>
+        </div>
       </div>
-    </section>
+
+    </div>
   </main>
-
-  <footer>
-    <div class="fine"><strong>Problem.</strong> College textbooks are expensive; used books go unused; lack of a central, trusted, college-exclusive platform.</div>
-    <div style="margin-top:4px" class="fine"><strong>Solution.</strong> A hub for college students to securely buy, sell, and exchange books with powerful filtering.</div>
-    <div style="margin-top:16px;text-align:center" class="fine">This is a single-file HTML/JS demo prototype. Real authentication requires a backend server.</div>
-  </footer>
-
-  <div class="modal" id="loginModal" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+  
+  <!-- Login Modal (Now just for sign-in/out) -->
+  <div class="modal" id="authModal" role="dialog" aria-modal="true" aria-labelledby="authTitle">
     <div class="panel">
       <div class="hd">
-        <span id="loginTitle">Account Access</span>
-        <button class="btn ghost" id="closeLogin">Close</button>
+        <span id="authTitle">Account Access</span>
+        <button class="btn ghost" onclick="closeModal(authModal)">Close</button>
       </div>
       <div class="bd">
-        <button class="btn google-btn" disabled>
-          <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" aria-hidden="true"><path fill="#fbc02d" d="M43.6 20.4H24v7.2h10.8c-.8 4.4-4.8 7.6-10.8 7.6-6.6 0-12-5.4-12-12s5.4-12 12-12c3.2 0 6.2 1.2 8.4 3.2l5.6-5.6c-4.2-4-9.8-6.4-16-6.4C12 4.8 4 12.8 4 24s8 19.2 20 19.2c12 0 19.2-8 19.2-19.2 0-1.6-.2-3.2-.4-4.8z"/><path fill="#e53935" d="M4 24c0-3.6.8-7 2.4-10.2l6.2 4.8c-.6 1.8-.8 3.8-.8 5.4s.2 3.6.8 5.4l-6.2 4.8c-1.6-3.2-2.4-6.6-2.4-10.2z"/><path fill="#4caf50" d="M24 43.6c-5.4 0-10.2-2.2-13.6-5.6l6.2-4.8c3.2 2 7 3.2 11 3.2 4.6 0 8.6-2 11.4-5.4l6.2 4.8c-3 4.2-7.8 6.8-13.6 6.8z"/><path fill="#1976d2" d="M43.6 20.4c0-1.6-.2-3.2-.4-4.8H24v9.6h10.8c.6 3.8 3.8 6.6 8.4 6.6 2.4 0 4.6-.6 6.4-1.8l-5.6-5.6c-1.4-1.2-3.4-1.8-5.2-1.8z"/></svg>
-          Continue with Google <span class="fine">(Demo Not Active)</span>
+        <button class="btn google" id="googleAuthBtn" disabled>
+          <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" style="width:18px;height:18px" aria-hidden="true"><path fill="#fbc02d" d="M43.6 20.4H24v7.2h10.8c-.8 4.4-4.8 7.6-10.8 7.6-6.6 0-12-5.4-12-12s5.4-12 12-12c3.2 0 6.2 1.2 8.4 3.2l5.6-5.6c-4.2-4-9.8-6.4-16-6.4C12 4.8 4 12.8 4 24s8 19.2 20 19.2c12 0 19.2-8 19.2-19.2 0-1.6-.2-3.2-.4-4.8z"/><path fill="#e53935" d="M4 24c0-3.6.8-7 2.4-10.2l6.2 4.8c-.6 1.8-.8 3.8-.8 5.4s.2 3.6.8 5.4l-6.2 4.8c-1.6-3.2-2.4-6.6-2.4-10.2z"/><path fill="#4caf50" d="M24 43.6c-5.4 0-10.2-2.2-13.6-5.6l6.2-4.8c3.2 2 7 3.2 11 3.2 4.6 0 8.6-2 11.4-5.4l6.2 4.8c-3 4.2-7.8 6.8-13.6 6.8z"/><path fill="#1976d2" d="M43.6 20.4c0-1.6-.2-3.2-.4-4.8H24v9.6h10.8c.6 3.8 3.8 6.6 8.4 6.6 2.4 0 4.6-.6 6.4-1.8l-5.6-5.6c-1.4-1.2-3.4-1.8-5.2-1.8z"/></svg>
+          Continue with Google
         </button>
 
         <div class="divider">OR</div>
 
-        <form id="loginForm">
-          <div class="modal-subtitle">Use your College Email for verification</div>
+        <form id="authForm">
+          <div class="fine" style="margin-bottom:12px">Use your primary Email for access.</div>
           <div>
             <label>Full Name
-              <input name="name" type="text" required placeholder="e.g., Priya Sharma" />
+              <input name="name" type="text" required placeholder="e.g., Priya Sharma" value="Demo User" />
             </label>
           </div>
           <div>
-            <label>College Email
-              <input name="email" type="email" required placeholder="name@college.edu" />
+            <label>Email
+              <!-- *UPDATED: Placeholder email* -->
+              <input name="email" type="email" required placeholder="name@gmail.com" value="demo@gmail.com" />
             </label>
           </div>
-          <div class="fine" style="margin:16px 0 10px">Your email must match the allowed domain (<span id="loginDomain">@college.edu</span>). No passwords are collected.</div>
-          <div class="row" style="margin-top:10px">
-            <div class="grow"></div>
+          <!-- *UPDATED: Email Domain Text* -->
+          <div class="fine" style="margin:16px 0 10px">Your email must end with <code>@gmail.com</code> for access.</div>
+          <div class="row" style="margin-top:10px; justify-content:flex-end">
             <button class="btn brand" type="submit">Verify & Sign In</button>
           </div>
         </form>
@@ -260,119 +339,411 @@
     </div>
   </div>
 
-  <div class="modal" id="aboutModal" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
-    <div class="panel">
-      <div class="hd">
-        <span id="aboutTitle">About This Demo</span>
-        <button class="btn ghost" id="closeAbout">Close</button>
-      </div>
-      <div class="bd">
-        <p>This is a <strong>single‑file HTML</strong> prototype that runs locally, but is deployed online. It demonstrates key features:</p>
-        <ul>
-          <li>College‑exclusive sign‑in (domain‑based verification)</li>
-          <li>Persistent login (details saved in browser's storage)</li>
-          <li>Add/Filter/Sort listings (stored in <code>localStorage</code>)</li>
-          <li>Direct contact via email draft + lightweight in‑app messages</li>
-          <li>Buy / Sell / Exchange types</li>
-        </ul>
-        <p class="fine">For a full production app, this UI would be connected to your deployed **Node.js server** with a database (like the MongoDB Atlas connection you just fixed!) and use secure, external authentication (like Google OAuth) instead of this demo login.</p>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal" id="contactModal" role="dialog" aria-modal="true" aria-labelledby="contactTitle">
-    <div class="panel">
-      <div class="hd">
-        <span id="contactTitle">Contact Seller</span>
-        <button class="btn ghost" id="closeContact">Close</button>
-      </div>
-      <div class="bd">
-        <div id="contactInfo" class="fine" style="margin-bottom:12px"></div>
-        <form id="msgForm">
-          <label class="sr-only">Message</label>
-          <textarea id="msgText" placeholder="Type a message to the seller…"></textarea>
-          <div class="row" style="margin-top:12px">
-            <a id="mailtoLink" class="btn ghost" href="#">Email Draft</a>
-            <div class="grow"></div>
-            <button class="btn brand" type="submit">Send In‑App</button>
-          </div>
-        </form>
-        <div id="thread" style="margin-top:20px"></div>
-      </div>
-    </div>
-  </div>
-
   <script>
-    // ----------------- Simple State -----------------
-    const ALLOWED_DOMAIN = '@college.edu'; // Change this to your domain (e.g., '@mycollege.edu.in')
-    document.getElementById('domainPill').textContent = 'domain: ' + ALLOWED_DOMAIN;
-    document.getElementById('loginDomain').textContent = ALLOWED_DOMAIN;
-
+    // --- Global State & Configuration ---
+    const API_BASE = window.location.origin.includes('localhost') ? 'http://localhost:10000/api' : '/api';
+    // *UPDATED: New allowed domain*
+    const ALLOWED_DOMAIN = '@gmail.com';
+    
+    // Simple state store using localStorage
     const store = {
-      get user(){ return JSON.parse(localStorage.getItem('ub_user')||'null') },
-      set user(v){ localStorage.setItem('ub_user', JSON.stringify(v)) },
-      get listings(){ return JSON.parse(localStorage.getItem('ub_listings')||'[]') },
-      set listings(v){ localStorage.setItem('ub_listings', JSON.stringify(v)) },
-      save(){ /* helper if needed */ }
+      get user() { return JSON.parse(localStorage.getItem('hub_user') || 'null') },
+      set user(v) { localStorage.setItem('hub_user', JSON.stringify(v)) },
+      get listings() { return JSON.parse(localStorage.getItem('hub_listings') || '[]') }, // Using this as a local cache
+      set listings(v) { localStorage.setItem('hub_listings', JSON.stringify(v)) },
+      currentView: 'home',
+      activeListing: null
     }
 
     const qs = s => document.querySelector(s);
-    const elListings = qs('#listings');
-    const elEmpty = qs('#empty');
-
-    // ----------------- Auth -----------------
-    const loginBtn = qs('#loginBtn');
-    const loginLabel = qs('#loginLabel');
-    const loginModal = qs('#loginModal');
-    const closeLogin = qs('#closeLogin');
-    const loginForm = qs('#loginForm');
-
+    
+    // --- Utility Functions ---
     function openModal(m){ m.style.display='flex' }
     function closeModal(m){ m.style.display='none' }
+    function escapeHtml(s){ return (s+"").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[m])) }
+    
+    function showMessage(msg, type = 'info') {
+        alert(`${type.toUpperCase()}: ${msg}`); // Use alert for simplicity in this demo
+    }
 
-    loginBtn.addEventListener('click',()=>{
-      if(store.user){
-        if(confirm('Sign out '+store.user.name.split(' ')[0]+'?')){
-          localStorage.removeItem('ub_user');
-          updateAuthUI();
+    // --- API Calls (Simulated Backend Interaction) ---
+    async function apiFetch(endpoint, options = {}) {
+      try {
+        const response = await fetch(`${API_BASE}${endpoint}`, {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(store.user && { 'Authorization': `Bearer ${store.user.token}` })
+          },
+          ...options
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'API Request Failed');
         }
-      }else{
-        openModal(loginModal)
-      }
-    })
-    closeLogin.addEventListener('click',()=>closeModal(loginModal))
-
-    loginForm.addEventListener('submit',e=>{
-      e.preventDefault();
-      const data = Object.fromEntries(new FormData(loginForm).entries());
-      const emailOk = data.email.toLowerCase().endsWith(ALLOWED_DOMAIN.toLowerCase());
-      if(!emailOk){
-        alert('Verification Failed: Email must end with '+ALLOWED_DOMAIN+'.');
-        return;
-      }
-      store.user = { name:data.name.trim(), email:data.email.trim(), verified:true, createdAt:Date.now() };
-      updateAuthUI();
-      closeModal(loginModal);
-    })
-
-    function updateAuthUI(){
-      if(store.user){
-        loginLabel.textContent = store.user.name.split(' ')[0]+' • Sign Out';
-        qs('#addCard').style.display = 'block';
-        // Pre-fill login form with remembered details
-        qs('#loginForm input[name="name"]').value = store.user.name;
-        qs('#loginForm input[name="email"]').value = store.user.email;
-      } else {
-        loginLabel.textContent = 'Sign In';
-        // Note: Listing is allowed for demo even without login. Change 'block' to 'none' to enforce login.
-        qs('#addCard').style.display = 'block';
-        // Clear form on sign-out
-        qs('#loginForm input[name="name"]').value = '';
-        qs('#loginForm input[name="email"]').value = '';
+        return data;
+      } catch (error) {
+        showMessage(`API Error: ${error.message}`, 'error');
+        return null;
       }
     }
 
-    // ----------------- Add Listing -----------------
+    // --- View/Page Switching ---
+    const viewMap = {
+      'home': qs('#homeView'),
+      'listings': qs('#listingsView'),
+      'my-listings': qs('#myListingsView'),
+      'add-listing': qs('#addListingView')
+    };
+
+    function setView(viewName) {
+      if (!viewMap[viewName]) return;
+      
+      // Update global state
+      store.currentView = viewName;
+
+      // Hide all views
+      Object.values(viewMap).forEach(el => el.classList.add('hidden'));
+      
+      // Show target view
+      viewMap[viewName].classList.remove('hidden');
+
+      // Update active navigation link
+      qs('.nav-link.active')?.classList.remove('active');
+      qs(`[data-view="${viewName}"]`)?.classList.add('active');
+
+      // Re-render data for the new view
+      if (viewName === 'listings') {
+        loadAndRenderListings();
+      } else if (viewName === 'my-listings') {
+        renderMyListings();
+      } else if (viewName === 'home') {
+        updateHomeStats();
+      }
+    }
+
+    // Attach event listeners to navigation links
+    qs('#navLinks').querySelectorAll('.nav-link').forEach(link => {
+      link.addEventListener('click', (e) => setView(e.target.dataset.view));
+    });
+
+    // --- Theme Toggle ---
+    const themeToggleBtn = qs('#themeToggle');
+    function toggleTheme() {
+      const isLight = document.body.classList.toggle('light-theme');
+      localStorage.setItem('hub_theme', isLight ? 'light' : 'dark');
+      themeToggleBtn.innerHTML = isLight 
+        ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>'
+        : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>';
+    }
+    themeToggleBtn.addEventListener('click', toggleTheme);
+    
+    // Initialize theme
+    const savedTheme = localStorage.getItem('hub_theme');
+    if (savedTheme === 'light') {
+      document.body.classList.add('light-theme');
+      themeToggleBtn.click(); // Trigger click to set icon
+    }
+    
+    // --- Authentication ---
+    const authBtn = qs('#authBtn');
+    const authModal = qs('#authModal');
+    const authForm = qs('#authForm');
+    const googleAuthBtn = qs('#googleAuthBtn');
+
+    function updateAuthUI() {
+      if (store.user) {
+        authBtn.textContent = store.user.name.split(' ')[0] + ' • Sign Out';
+        authBtn.classList.remove('brand');
+        authBtn.classList.add('ghost');
+      } else {
+        authBtn.textContent = 'Sign In';
+        authBtn.classList.remove('ghost');
+        authBtn.classList.add('brand');
+      }
+      renderMyListings(); // Re-render My Books view
+    }
+
+    authBtn.addEventListener('click', () => {
+      if (store.user) {
+        if (confirm('Are you sure you want to sign out?')) {
+          store.user = null;
+          updateAuthUI();
+          setView('home');
+          showMessage('Signed out successfully.', 'info');
+        }
+      } else {
+        openModal(authModal);
+      }
+    });
+
+    // Handle form-based login
+    authForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await handleAuth(new FormData(authForm));
+    });
+    
+    // Handle simulated Google login
+    googleAuthBtn.disabled = false;
+    googleAuthBtn.addEventListener('click', async () => {
+        // *UPDATED: Updated demo email to @gmail.com*
+        const fakeData = { name: "Google Sign-in Demo", email: "google.demo@gmail.com" };
+        const formData = new FormData();
+        formData.append('name', fakeData.name);
+        formData.append('email', fakeData.email);
+        await handleAuth(formData, true);
+    });
+
+    async function handleAuth(formData, isGoogle = false) {
+      const data = Object.fromEntries(formData.entries());
+      
+      const response = await apiFetch('/auth/login', {
+          method: 'POST',
+          body: JSON.stringify(data)
+      });
+      
+      if (response && response.user) {
+        store.user = response.user;
+        updateAuthUI();
+        closeModal(authModal);
+        showMessage(`Welcome, ${response.user.name.split(' ')[0]}! You are now signed in.`, 'success');
+        setView('listings');
+      }
+    }
+
+
+    // --- Listing Data & Filtering ---
+    const q = qs('#q');
+    const typeFilter = qs('#typeFilter');
+    const condFilter = qs('#condFilter');
+    const sortBy = qs('#sortBy');
+    const clearFilters = qs('#clearFilters');
+
+    // Attach event listeners for filtering/sorting
+    ;[q, typeFilter, condFilter, sortBy].forEach(el => el.addEventListener('input', renderListingsGrid));
+    clearFilters.addEventListener('click', () => {
+      q.value='';typeFilter.value='';condFilter.value='';sortBy.value='new';
+      renderListingsGrid();
+    });
+
+    function applyFilters(data, isMyListings = false) {
+      if (isMyListings && store.user) {
+        data = data.filter(d => d.owner.userId === store.user.userId);
+      }
+      
+      const term = q.value.trim().toLowerCase();
+      let res = data.filter(d => {
+        const str = (d.title + ' ' + d.author + ' ' + d.subject + ' ' + d.description).toLowerCase();
+        if (term && !str.includes(term)) return false;
+        if (typeFilter.value && d.type !== typeFilter.value) return false;
+        if (condFilter.value && d.condition !== condFilter.value) return false;
+        return true;
+      });
+
+      switch (sortBy.value) {
+        case 'priceAsc': res.sort((a, b) => a.price - b.price); break;
+        case 'priceDesc': res.sort((a, b) => b.price - a.price); break;
+        case 'title': res.sort((a, b) => a.title.localeCompare(b.title)); break;
+        default: res.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      }
+      return res;
+    }
+
+    async function loadAndRenderListings() {
+      const data = await apiFetch('/books');
+      if (data) {
+        store.listings = data; // Cache in store
+        renderListingsGrid();
+      }
+    }
+
+    function renderListingsGrid() {
+      const allData = store.listings;
+      const filteredData = applyFilters(allData, false);
+      const grid = qs('#listingsGrid');
+      grid.innerHTML = '';
+      
+      qs('#statTotalBooks').textContent = allData.length;
+      
+      if (!filteredData.length) {
+        qs('#emptyListings').classList.remove('hidden');
+        return;
+      }
+      qs('#emptyListings').classList.add('hidden');
+
+      filteredData.forEach(d => grid.appendChild(createListingCard(d, false)));
+    }
+    
+    function renderMyListings() {
+      if (!store.user) {
+        qs('#myListingsView').innerHTML = '<div class="card" style="text-align:center; padding:40px; margin-top:30px"><p class="fine">Please sign in to view and manage your listings.</p><button class="btn brand" onclick="openModal(authModal)">Sign In Now</button></div>';
+        qs('#myListingsCount').textContent = '0';
+        qs('#statMyListings').textContent = '0';
+        return;
+      }
+
+      const myListings = applyFilters(store.listings, true);
+      const grid = qs('#myListingsGrid');
+      grid.innerHTML = '';
+      
+      qs('#myListingsCount').textContent = myListings.length;
+      qs('#statMyListings').textContent = myListings.length;
+      
+      if (!myListings.length) {
+        qs('#emptyMyListings').classList.remove('hidden');
+        return;
+      }
+      qs('#emptyMyListings').classList.add('hidden');
+
+      myListings.forEach(d => grid.appendChild(createListingCard(d, true)));
+    }
+    
+    function updateHomeStats() {
+        const myListings = applyFilters(store.listings, true);
+        qs('#statTotalBooks').textContent = store.listings.length;
+        qs('#statMyListings').textContent = myListings.length;
+    }
+    
+    // --- Card Rendering ---
+    function createListingCard(d, isOwnerView = false) {
+      const card = document.createElement('article');
+      card.className = 'listing-card';
+      card.setAttribute('data-id', d._id); // Use MongoDB ID
+      
+      const imgPlaceholder = 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="100%" height="100%" fill="var(--border)"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="var(--muted)" font-family="Inter" font-size="16">No Cover</text></svg>`);
+      
+      const priceDisplay = d.type === 'Exchange' 
+        ? `<span class="price" style="color:var(--brand-2)">EXCHANGE</span>`
+        : d.type === 'Buy'
+        ? `<span class="price" style="color:var(--brand-2)">WANT TO BUY</span>`
+        : `<span class="price" style="color:var(--brand)">₹ ${Number(d.price).toLocaleString()}</span>`;
+
+      const typeColor = d.type === 'Sell' ? 'var(--brand)' : d.type === 'Buy' ? 'var(--brand-2)' : 'var(--muted)';
+
+      card.innerHTML = `
+        <img src="${d.image || imgPlaceholder}" alt="${escapeHtml(d.title)} Cover" onerror="this.src='${imgPlaceholder}'" />
+        <div class="info">
+          <div class="row" style="justify-content:space-between;align-items:flex-start">
+            <h3 style="flex-grow:1">${escapeHtml(d.title)}</h3>
+            <span class="tag" style="background:${typeColor}; color:var(--bg); border:0">${d.type}</span>
+          </div>
+          <div class="fine" style="margin-bottom:4px">${escapeHtml(d.author || 'Unknown')} • ${escapeHtml(d.subject || 'General')}</div>
+          ${priceDisplay}
+          <div class="meta">
+            <span>Condition: ${d.condition}</span>
+            <span>|</span>
+            <span>Posted by: ${escapeHtml(d.owner.name.split(' ')[0])}</span>
+          </div>
+          <div class="row" style="margin-top:auto; padding-top:10px; border-top:1px dashed var(--border)">
+            <button class="btn ghost grow" data-action="view-details">Details & Messages</button>
+            ${isOwnerView ? `<button class="btn brand" style="background:#dc2626" data-action="remove">Remove</button>` : ''}
+          </div>
+        </div>
+      `;
+      
+      // Add event listener to handle clicks within the card
+      card.addEventListener('click', (e) => {
+        const action = e.target.dataset.action;
+        if (action === 'remove') {
+          handleDeleteListing(d._id, d.title);
+        } else {
+          showDetailModal(d);
+        }
+      });
+
+      return card;
+    }
+
+    // --- Detail Modal Functions ---
+    const detailModal = qs('#detailModal');
+    const detailContent = qs('#detailContent');
+
+    function showDetailModal(listing) {
+        store.activeListing = listing;
+        qs('#detailTitle').textContent = listing.title;
+        
+        const isOwner = store.user && store.user.userId === listing.owner.userId;
+        const ownerName = escapeHtml(listing.owner.name);
+        const priceDisplay = listing.type === 'Exchange' 
+            ? `<span class="price" style="color:var(--brand-2)">EXCHANGE</span>`
+            : listing.type === 'Buy'
+            ? `<span class="price" style="color:var(--brand-2)">WANT TO BUY</span>`
+            : `<span class="price" style="color:var(--brand)">₹ ${Number(listing.price).toLocaleString()}</span>`;
+
+        detailContent.innerHTML = `
+            <div id="detailView">
+                <div id="detailMedia">
+                    <img id="detailImage" src="${listing.image || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="100%" height="100%" fill="var(--border)"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="var(--muted)" font-family="Inter" font-size="16">No Cover</text></svg>'}" alt="${escapeHtml(listing.title)} Cover">
+                </div>
+                <div id="detailInfo">
+                    <h1>${escapeHtml(listing.title)}</h1>
+                    <div class="fine" style="margin-bottom:15px">${escapeHtml(listing.author || 'Unknown')} • ${escapeHtml(listing.subject || 'General')}</div>
+                    ${priceDisplay}
+                    <p><strong>Type:</strong> <span class="tag" style="background:var(--brand); color:var(--bg);">${listing.type}</span></p>
+                    <p><strong>Condition:</strong> ${listing.condition}</p>
+                    <!-- Removed specific domain mention for generic email -->
+                    <p><strong>Posted By:</strong> ${ownerName}</p> 
+                    
+                    <h3 style="margin-top:20px; border-top:1px solid var(--border); padding-top:10px">Description</h3>
+                    <p>${escapeHtml(listing.description || 'No detailed description provided.')}</p>
+
+                    ${!isOwner ? `
+                        <div class="row" style="margin-top:20px">
+                            <a href="mailto:${listing.owner.email}?subject=${encodeURIComponent('Enquiry: ' + listing.title)}&body=${encodeURIComponent(`Hi ${ownerName}, I'm interested in your listing...`)}" class="btn ghost grow">Email Seller</a>
+                            <button class="btn brand grow" data-action="contact-seller">Send In-App Message</button>
+                        </div>` : `<div class="row" style="margin-top:20px"><button class="btn brand" style="background:#dc2626; width:100%" data-action="remove-listing-detail">Remove My Listing</button></div>`
+                    }
+                </div>
+            </div>
+            <div id="messageThread">
+                <h3 style="margin-bottom:15px">Messages (${listing.msgs.length})</h3>
+                <div id="messageList" class="col" style="gap:8px">${renderMessages(listing.msgs)}</div>
+                ${isOwner ? '<p class="fine">Messages are visible to the owner only.</p>' : ''}
+                
+                ${!isOwner && store.user ? `
+                    <form id="messageForm" style="margin-top:20px">
+                        <textarea id="msgText" placeholder="Type your message to ${ownerName.split(' ')[0]}..." style="margin-bottom:10px"></textarea>
+                        <button class="btn brand" type="submit">Send Message</button>
+                    </form>` : ''
+                }
+                ${!isOwner && !store.user ? '<p class="fine" style="text-align:center; margin-top:20px">Sign in to send messages.</p>' : ''}
+            </div>
+        `;
+        
+        if (isOwner) {
+            // Only owners see the message list, non-owners get the form
+            qs('#messageList').style.display = 'block';
+        } else if (store.user) {
+            // Non-owner who is logged in sees the form, but only their own messages (for demo simplicity)
+             qs('#messageList').style.display = 'none'; // Only show messages to the owner for privacy simulation
+        } else {
+             qs('#messageList').style.display = 'none'; // Not logged in, hide all
+        }
+
+        // Event listener for message submission
+        const messageForm = qs('#messageForm');
+        if (messageForm) {
+            messageForm.addEventListener('submit', handleAddMessage);
+        }
+
+        openModal(detailModal);
+    }
+    
+    function renderMessages(msgs) {
+        if (!msgs || msgs.length === 0) return '<p class="fine" style="text-align:center">No messages yet.</p>';
+        return msgs.map(m => `
+            <div class="msg-item">
+                <div class="sender">${escapeHtml(m.by)} <span class="fine" style="float:right">${new Date(m.ts).toLocaleString()}</span></div>
+                <div>${escapeHtml(m.text)}</div>
+            </div>
+        `).join('');
+    }
+
+
+    // --- CRUD Handlers ---
+
+    // 1. Add Listing
     const listingForm = qs('#listingForm');
     const imageInput = qs('#imageInput');
     const preview = qs('#preview');
@@ -386,225 +757,117 @@
       reader.readAsDataURL(f);
     })
 
-    listingForm.addEventListener('submit', e=>{
+    listingForm.addEventListener('submit', async e => {
       e.preventDefault();
-      const data = Object.fromEntries(new FormData(listingForm).entries());
-      const id = 'L'+Math.random().toString(36).slice(2,9);
-      const owner = store.user || { name:'Guest', email:'guest@example.com'};
-      const price = Number(data.price||0);
-      const rec = {
-        id,
-        type:data.type,
-        price:isNaN(price)?0:price,
-        title:data.title.trim(),
-        author:(data.author||'').trim(),
-        subject:(data.subject||'').trim(),
-        condition:data.condition,
-        description:(data.description||'').trim(),
-        image: previewBase64,
-        owner,
-        createdAt: Date.now(),
-        msgs: []
-      }
-      const list = store.listings; list.unshift(rec); store.listings = list;
-      listingForm.reset(); preview.style.display='none'; previewBase64='';
-      alert(`Listing "${rec.title}" Published!`);
-      render();
-    })
-
-    // ----------------- Filters -----------------
-    const q = qs('#q');
-    const typeFilter = qs('#typeFilter');
-    const condFilter = qs('#condFilter');
-    const minPrice = qs('#minPrice');
-    const maxPrice = qs('#maxPrice');
-    const sortBy = qs('#sortBy');
-    const clearFilters = qs('#clearFilters');
-
-    ;[q,typeFilter,condFilter,minPrice,maxPrice,sortBy].forEach(el=>el.addEventListener('input',render))
-    clearFilters.addEventListener('click',()=>{
-      q.value='';typeFilter.value='';condFilter.value='';minPrice.value='';maxPrice.value='';sortBy.value='new';render();
-    })
-
-    function applyFilters(data){
-      const term = q.value.trim().toLowerCase();
-      let res = data.filter(d=>{
-        const str = (d.title+' '+d.author+' '+d.subject+' '+d.description).toLowerCase();
-        if(term && !str.includes(term)) return false;
-        if(typeFilter.value && d.type!==typeFilter.value) return false;
-        if(condFilter.value && d.condition!==condFilter.value) return false;
-        if(minPrice.value && d.price < Number(minPrice.value)) return false;
-        if(maxPrice.value && d.price > Number(maxPrice.value)) return false;
-        return true;
-      });
-      switch(sortBy.value){
-        case 'priceAsc': res.sort((a,b)=>a.price-b.price); break;
-        case 'priceDesc': res.sort((a,b)=>b.price-a.price); break;
-        case 'title': res.sort((a,b)=>a.title.localeCompare(b.title)); break;
-        default: res.sort((a,b)=>b.createdAt-a.createdAt);
-      }
-      return res;
-    }
-
-    // ----------------- Render (Updated for Attractive UI) -----------------
-    function render(){
-      updateAuthUI();
-      const data = applyFilters(store.listings);
-      elListings.innerHTML = '';
-      if(!data.length){ elEmpty.style.display='block'; return } else { elEmpty.style.display='none' }
-      
-      const currentUser = store.user;
-
-      for(const d of data){
-        const isOwner = currentUser && currentUser.email === d.owner.email;
-        const card = document.createElement('article');
-        card.className='listing';
-        
-        const img = document.createElement('img');
-        img.alt = d.title;
-        img.src = d.image || 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="100%" height="100%" fill="%230f172a"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%2394a3b8" font-family="Inter" font-size="16">No Image Available</text></svg>`);
-        
-        const info = document.createElement('div'); info.className='info';
-        
-        const contactBtn = isOwner 
-          ? `<button class="btn danger" data-action="remove" data-id="${d.id}" style="width:100%">Remove Listing</button>`
-          : `<button class="btn brand" data-action="contact" data-id="${d.id}">Contact Seller</button>`;
-
-        const exchangeBtn = !isOwner && d.type !== 'Buy'
-          ? `<button class="btn ghost" data-action="exchange" data-id="${d.id}" title="Propose an Exchange">Exchange</button>`
-          : '';
-
-        const priceDisplay = d.type === 'Exchange' 
-          ? '<span class="price" style="color:var(--warn)">EXCHANGE</span>'
-          : d.type === 'Buy'
-          ? '<span class="price" style="color:var(--brand-2)">WANT TO BUY</span>'
-          : `<span class="price">₹ ${Number(d.price).toLocaleString()}</span>`;
-
-        info.innerHTML = `
-          <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:4px">
-            <h3>${escapeHtml(d.title)}</h3>
-            <span class="tag" style="background:${d.type==='Sell'?'#10b981':'#6366f1'}">${d.type}</span>
-          </div>
-          <div class="fine">${escapeHtml(d.author || '—')} • ${escapeHtml(d.subject || '—')}</div>
-          ${priceDisplay}
-          <div class="meta" style="margin-top:4px">
-            <span class="pill">${d.condition}</span>
-            <span class="pill" title="Owner">👤 ${escapeHtml(d.owner.name.split(' ')[0])}</span>
-            <span class="pill" title="Posted Date">${new Date(d.createdAt).toLocaleDateString()}</span>
-          </div>
-          <div class="fine" style="margin-top:10px;overflow:hidden;text-overflow:ellipsis;max-height:4.5em;">${escapeHtml(d.description||'')}</div>
-          
-          <div class="actions">
-            ${contactBtn}
-            ${exchangeBtn}
-          </div>
-        `;
-        card.appendChild(img); card.appendChild(info);
-        elListings.appendChild(card);
-      }
-    }
-
-    // Sanitize basic text
-    function escapeHtml(s){ return (s+"").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[m])) }
-
-    // ----------------- Contact / Messages -----------------
-    const contactModal = qs('#contactModal');
-    const contactInfo = qs('#contactInfo');
-    const closeContact = qs('#closeContact');
-    const msgForm = qs('#msgForm');
-    const msgText = qs('#msgText');
-    const mailtoLink = qs('#mailtoLink');
-    const thread = qs('#thread');
-    let currentListing = null;
-
-    document.body.addEventListener('click', (e)=>{
-      const btn = e.target.closest('button');
-      if(!btn) return;
-      const {action,id} = btn.dataset;
-      if(!action) return;
-      const list = store.listings;
-      const item = list.find(x=>x.id===id);
-      if(!item) return;
-
-      if(action==='remove'){
-        if(confirm(`Are you sure you want to remove the listing for "${item.title}"?`)){
-          const idx = list.findIndex(x=>x.id===id); list.splice(idx,1); store.listings = list; render();
-        }
-      }
-      if(action==='contact' || action==='exchange'){
-        if(!store.user) {
-          alert('Please sign in to contact the seller.');
-          openModal(loginModal);
-          return;
-        }
-
-        currentListing = item;
-        
-        let subject = `Enquiry: ${item.title}`;
-        let body = `Hi ${item.owner.name},\n\nI am interested in your listing: ${item.title} (${item.type}).\nPrice: ₹${item.price}\n\n— ${store.user.name}`;
-
-        if(action==='exchange'){
-          subject = `Exchange Proposal: ${item.title}`;
-          body = `Hi ${item.owner.name},\n\nWould you consider an exchange for ${item.title}? I can offer …\n\n— ${store.user.name}`;
-          msgText.value = 'Hi! I can exchange with … (book title/condition).';
-        } else {
-          msgText.value = '';
-        }
-        
-        contactInfo.textContent = `Seller: ${item.owner.name} (${item.owner.email})`;
-        mailtoLink.href = `mailto:${encodeURIComponent(item.owner.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-        
-        renderThread(item);
-        openModal(contactModal);
-      }
-    })
-
-    closeContact.addEventListener('click',()=>closeModal(contactModal))
-
-    msgForm.addEventListener('submit', e=>{
-      e.preventDefault();
-      const text = msgText.value.trim(); if(!text || !currentListing) return;
-      
-      const me = store.user || {name:'Guest', email:'guest@example.com'};
-      if (me.name === 'Guest') {
-        alert('You must sign in to send in-app messages.');
-        openModal(loginModal);
+      if (!store.user) {
+        showMessage('You must sign in to publish a listing.', 'warning');
+        openModal(authModal);
         return;
       }
-
-      const list = store.listings;
-      const item = list.find(x=>x.id===currentListing.id); if(!item) return;
       
-      item.msgs.push({ by:me.name, text, ts:Date.now() });
-      store.listings = list; msgText.value=''; renderThread(item);
-    })
+      const data = Object.fromEntries(new FormData(listingForm).entries());
+      const price = Number(data.price || 0);
+      
+      const newListing = {
+        title: data.title.trim(),
+        author: data.author.trim(),
+        subject: data.subject.trim(),
+        description: data.description.trim(),
+        type: data.type,
+        price: isNaN(price) ? 0 : price,
+        condition: data.condition,
+        image: previewBase64,
+        owner: {
+          name: store.user.name,
+          email: store.user.email,
+          userId: store.user.userId
+        },
+        msgs: []
+      }
 
-    function renderThread(item){
-      if(!item.msgs?.length){ thread.innerHTML = '<div class="fine" style="text-align:center">No messages yet. Use Email Draft or send an in‑app message.</div>'; return }
-      thread.innerHTML = item.msgs.map(m=>`<div class="msg-item"><div class="sender">${escapeHtml(m.by)}</div><div>${escapeHtml(m.text)}</div><div class="fine" style="margin-top:4px">${new Date(m.ts).toLocaleString()}</div></div>`).join('');
+      const response = await apiFetch('/books', {
+        method: 'POST',
+        body: JSON.stringify(newListing)
+      });
+      
+      if (response) {
+        // Update local cache and UI
+        store.listings.unshift(response);
+        listingForm.reset(); 
+        preview.style.display='none'; 
+        previewBase64='';
+        showMessage(`Listing "${newListing.title}" Published!`, 'success');
+        setView('my-listings');
+      }
+    });
+
+    // 2. Delete Listing
+    async function handleDeleteListing(id, title) {
+      if (!store.user) return; 
+      if (!confirm(`Are you sure you want to remove the listing for "${title}"? This cannot be undone.`)) return;
+
+      const response = await apiFetch(`/books/${id}`, { method: 'DELETE' });
+
+      if (response) {
+        // Remove from local cache
+        store.listings = store.listings.filter(d => d._id !== id);
+        showMessage(`Listing "${title}" removed.`, 'success');
+        
+        // Re-render the current view
+        if (store.currentView === 'my-listings') renderMyListings();
+        else renderListingsGrid();
+        
+        if (store.activeListing && store.activeListing._id === id) closeModal(detailModal);
+      }
     }
+    
+    // Attach event listener for the remove button in the detail modal
+    detailContent.addEventListener('click', (e) => {
+        if (e.target.dataset.action === 'remove-listing-detail' && store.activeListing) {
+            handleDeleteListing(store.activeListing._id, store.activeListing.title);
+        }
+    });
 
-    // ----------------- About Modal -----------------
-    const aboutBtn = qs('#aboutBtn');
-    const aboutModal = qs('#aboutModal');
-    const closeAbout = qs('#closeAbout');
-    aboutBtn.addEventListener('click',()=>openModal(aboutModal));
-    closeAbout.addEventListener('click',()=>closeModal(aboutModal));
+    // 3. Add Message
+    async function handleAddMessage(e) {
+      e.preventDefault();
+      if (!store.user || !store.activeListing) return;
 
-    // ----------------- Seed Demo Data (first run) -----------------
-    (function seed(){
-      if(store.listings.length) return;
-      const demo = [
-        {type:'Sell', price:350, title:'Discrete Mathematics and Its Applications', author:'Kenneth Rosen', subject:'CSE / Discrete Math', condition:'Good', description:'6th Ed. A few highlights. Great condition, barely used. Price negotiable.', image:'', owner:{name:'Arjun Mehta', email:'arjun@college.edu'}},
-        {type:'Exchange', price:0, title:'Operating System Concepts', author:'Silberschatz', subject:'CSE / OS', condition:'Fair', description:'7th Edition. Heavy highlights, but fully functional. Willing to swap for a DBMS book or a Python book.', image:'', owner:{name:'Sneha Rao', email:'sneha@college.edu'}},
-        {type:'Buy', price:200, title:'Python Crash Course', author:'Eric Matthes', subject:'Programming', condition:'Good', description:'Looking for an affordable, second-hand copy of the 2nd Edition. Can pay up to ₹250.', image:'', owner:{name:'Rahul Verma', email:'rahul@college.edu'}}
-      ];
-      store.listings = demo.map(x=>({id:'L'+Math.random().toString(36).slice(2,9), createdAt:Date.now()-Math.floor(Math.random()*1e7), msgs:[], image:'', ...x}));
-    })();
+      const msgTextEl = qs('#msgText');
+      const text = msgTextEl.value.trim();
+      if (!text) return;
 
-    // ----------------- Init -----------------
-    updateAuthUI();
-    render();
+      const messagePayload = {
+        by: store.user.name,
+        text: text
+      };
+
+      const response = await apiFetch(`/books/${store.activeListing._id}/message`, {
+        method: 'POST',
+        body: JSON.stringify(messagePayload)
+      });
+
+      if (response) {
+        // Update the message array in the local cache
+        const localListing = store.listings.find(d => d._id === store.activeListing._id);
+        if (localListing) {
+            localListing.msgs.push(response);
+            store.activeListing.msgs.push(response);
+        }
+        
+        // Re-render the messages in the modal
+        qs('#messageList').innerHTML = renderMessages(store.activeListing.msgs);
+        msgTextEl.value = '';
+        showMessage('Message sent successfully. Only the owner can view it.', 'success');
+      }
+    }
+    
+    // --- Initial Load ---
+    document.addEventListener('DOMContentLoaded', () => {
+      updateAuthUI();
+      loadAndRenderListings();
+      setView('home'); // Start on the new Home page
+    });
   </script>
 </body>
 </html>
