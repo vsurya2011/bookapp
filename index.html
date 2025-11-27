@@ -3,1220 +3,673 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Book Hub — Modern Dashboard</title>
+  <title>Book Hub — Buy, Sell, Exchange</title>
   <style>
     /* ----------------- Theme Variables ----------------- */
     :root{
-      /* Dark Theme */
-      --bg: #0f172a; /* slate-900 */
-      --card: #1e293b; /* slate-800 */
-      --border: #334155; /* slate-700 */
-      --text: #f1f5f9; /* slate-100 */
-      --muted: #94a3b8; /* slate-400 */
-      --brand: #34d399; /* emerald-400 */
-      --brand-2: #6366f1; /* indigo-500 */
+      /* Dark Theme Default */
+      --bg: #0f172a; --card: #1e293b; --border: #334155; --text: #f1f5f9; --muted: #94a3b8;
+      --brand: #34d399; --brand-hover: #10b981; --brand-2: #6366f1;
       --shadow: 0 10px 30px rgba(0,0,0,0.5);
+      --msg-me: #34d399; --msg-them: #334155;
     }
     .light-theme {
-      /* Light Theme */
-      --bg: #f8fafc; /* slate-50 */
-      --card: #ffffff;
-      --border: #e2e8f0; /* slate-200 */
-      --text: #0f172a; /* slate-900 */
-      --muted: #64748b; /* slate-500 */
-      --brand: #10b981; /* emerald-500 */
-      --brand-2: #4f46e5; /* indigo-600 */
+      --bg: #f8fafc; --card: #ffffff; --border: #e2e8f0; --text: #0f172a; --muted: #64748b;
+      --brand: #10b981; --brand-hover: #059669; --brand-2: #4f46e5;
       --shadow: 0 4px 12px rgba(0,0,0,0.1);
+      --msg-me: #10b981; --msg-them: #e2e8f0;
     }
 
     /* ----------------- Reset & Base Styles ----------------- */
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Inter', sans-serif;
-    }
-    body {
-      background-color: var(--bg);
-      color: var(--text);
-      transition: background-color 0.3s, color 0.3s;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-    h1, h2, h3 { color: var(--text); font-weight: 600; }
-    h1 { font-size: 2rem; }
-    h3 { font-size: 1.25rem; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); transition: background-color 0.3s, color 0.3s; min-height: 100vh; display: flex; flex-direction: column; }
+    
+    h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.5rem; }
+    h2 { font-size: 1.4rem; font-weight: 600; }
+    h3 { font-size: 1.1rem; font-weight: 600; }
     p { line-height: 1.6; }
     a { color: var(--brand); text-decoration: none; }
-
-    /* ----------------- Layout & Components ----------------- */
-
-    /* Header */
+    
+    /* ----------------- Header ----------------- */
     header {
-      background-color: var(--card);
-      border-bottom: 1px solid var(--border);
-      padding: 1rem 2rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: var(--shadow);
-      position: sticky;
-      top: 0;
-      z-index: 100;
+      background-color: var(--card); border-bottom: 1px solid var(--border);
+      padding: 0 2rem; height: 70px; display: flex; justify-content: space-between; align-items: center;
+      box-shadow: var(--shadow); position: sticky; top: 0; z-index: 100;
     }
-    #logo {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: var(--brand);
-      cursor: pointer;
-    }
-    #navLinks {
-      display: flex;
-      gap: 1.5rem;
-    }
-    .nav-link {
-      font-size: 1rem;
-      font-weight: 500;
-      color: var(--muted);
-      cursor: pointer;
-      padding: 0.5rem 0;
-      transition: color 0.2s;
-    }
-    .nav-link:hover, .nav-link.active {
-      color: var(--text);
-      border-bottom: 2px solid var(--brand);
-    }
-    #authControls {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
-    #themeToggle {
-      background: none;
-      border: 1px solid var(--border);
-      color: var(--muted);
-      cursor: pointer;
-      padding: 0.5rem;
-      border-radius: 6px;
-      line-height: 1;
-      transition: all 0.2s;
-    }
-    #themeToggle:hover {
-      background-color: var(--border);
-      color: var(--text);
-    }
+    #logo { font-size: 1.5rem; font-weight: 700; color: var(--brand); cursor: pointer; display: flex; align-items: center; gap: 10px; }
+    
+    /* Navigation */
+    nav { display: flex; align-items: center; gap: 2rem; }
+    #navLinks { display: flex; gap: 1.5rem; }
+    .nav-link { font-size: 0.95rem; font-weight: 500; color: var(--muted); cursor: pointer; padding: 0.5rem 0; transition: color 0.2s; position: relative; }
+    .nav-link:hover, .nav-link.active { color: var(--text); }
+    .nav-link.active::after { content:''; position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background: var(--brand); }
 
-    /* Main Content */
-    main {
-      flex-grow: 1;
-      padding: 2rem;
-      max-width: 1400px;
-      width: 100%;
-      margin: 0 auto;
-    }
-    section {
-      padding: 2rem 0;
-      min-height: 50vh;
-    }
-    .hidden {
-      display: none !important;
-    }
+    /* Auth & Controls */
+    #authControls { display: flex; align-items: center; gap: 1rem; }
+    #themeToggle { background: none; border: 1px solid var(--border); color: var(--muted); cursor: pointer; padding: 0.4rem; border-radius: 6px; display: flex; }
+    
+    /* Mobile Menu Button */
+    #mobileMenuBtn { display: none; background: none; border: none; color: var(--text); cursor: pointer; font-size: 1.5rem; }
 
-    /* Cards and Grids */
-    .dashboard-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 20px;
-      margin-top: 20px;
-    }
-    .stat-card {
-      background-color: var(--card);
-      padding: 1.5rem;
-      border-radius: 8px;
-      box-shadow: var(--shadow);
-      border: 1px solid var(--border);
-    }
-    .stat-card h3 {
-      color: var(--muted);
-      font-size: 1rem;
-      margin-bottom: 0.5rem;
-    }
-    .stat-card .value {
-      font-size: 2.5rem;
-      font-weight: 700;
-      color: var(--brand);
-    }
-    .listing-card {
-      background-color: var(--card);
-      border-radius: 8px;
-      box-shadow: var(--shadow);
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      border: 1px solid var(--border);
-      transition: transform 0.2s;
-      cursor: pointer;
-    }
-    .listing-card:hover {
-        transform: translateY(-3px);
-    }
-    .listing-card img {
-      width: 100%;
-      height: 200px;
-      object-fit: cover;
-      display: block;
-      border-bottom: 1px solid var(--border);
-    }
-    .listing-card .info {
-      padding: 1rem;
-      display: flex;
-      flex-direction: column;
-      flex-grow: 1;
-    }
-    .listing-card h3 {
-      margin: 0.5rem 0;
-    }
-    .listing-card .meta {
-      font-size: 0.85rem;
-      color: var(--muted);
-      margin-bottom: 0.5rem;
-    }
-    .listing-card .row {
-        display: flex;
-        gap: 10px;
-        align-items: center;
-    }
+    /* ----------------- Main Layout ----------------- */
+    main { flex-grow: 1; padding: 2rem; width: 100%; max-width: 1200px; margin: 0 auto; }
+    section { padding: 1rem 0; animation: fadeIn 0.3s ease-in-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .hidden { display: none !important; }
 
-    /* Forms */
-    .form-group {
-      margin-bottom: 1rem;
-    }
-    .form-group label {
-      display: block;
-      margin-bottom: 0.5rem;
-      font-weight: 500;
-      color: var(--text);
-    }
-    .form-group input:not([type="checkbox"]), .form-group select, .form-group textarea {
-      width: 100%;
-      padding: 0.75rem;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      background-color: var(--bg);
-      color: var(--text);
-      transition: border-color 0.2s;
-    }
-    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-      border-color: var(--brand);
-      outline: none;
-    }
-    .form-group textarea {
-        min-height: 100px;
-    }
+    /* ----------------- Dashboard Grid ----------------- */
+    .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; margin-top: 20px; }
+    
+    .stat-card { background-color: var(--card); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border); text-align: center; }
+    .stat-card .value { font-size: 2.5rem; font-weight: 700; color: var(--brand); margin: 10px 0; }
 
+    /* Listing Card */
+    .listing-card { background-color: var(--card); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; border: 1px solid var(--border); transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; height: 100%; }
+    .listing-card:hover { transform: translateY(-4px); box-shadow: var(--shadow); }
+    .listing-card img { width: 100%; height: 220px; object-fit: cover; border-bottom: 1px solid var(--border); }
+    .listing-card .info { padding: 1.25rem; display: flex; flex-direction: column; flex-grow: 1; gap: 8px; }
+    .listing-card h3 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .listing-card .row { display: flex; justify-content: space-between; align-items: center; }
+    
+    /* Tags & Price */
+    .tag { padding: 0.2rem 0.6rem; background-color: var(--border); border-radius: 4px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .price { font-size: 1.25rem; font-weight: 700; color: var(--brand); }
+    .type-exchange { color: var(--brand-2); font-weight: 700; font-size: 0.9rem; }
+    
+    /* ----------------- Forms & Inputs ----------------- */
+    .filters { background: var(--card); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 2rem; display: flex; gap: 1rem; flex-wrap: wrap; }
+    .form-group { margin-bottom: 1rem; }
+    .form-group label { display: block; margin-bottom: 0.5rem; font-size: 0.9rem; font-weight: 500; }
+    input, select, textarea { width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; background-color: var(--bg); color: var(--text); font-size: 1rem; }
+    input:focus, select:focus, textarea:focus { border-color: var(--brand); outline: none; box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.2); }
+    
     /* Buttons */
-    .btn {
-      padding: 0.75rem 1.25rem;
-      border-radius: 6px;
-      font-weight: 600;
-      cursor: pointer;
-      border: none;
-      transition: background-color 0.2s;
-    }
-    .btn.brand {
-      background-color: var(--brand);
-      color: var(--bg);
-    }
-    .btn.brand:hover {
-      background-color: var(--brand-2);
-      color: var(--text);
-    }
-    .btn.ghost {
-      background-color: transparent;
-      border: 1px solid var(--brand);
-      color: var(--brand);
-    }
-    .btn.ghost:hover {
-      background-color: rgba(52, 211, 153, 0.1);
-    }
-    .btn.grow {
-        flex-grow: 1;
-    }
-    .row {
-        display: flex;
-        gap: 1rem;
-        align-items: center;
-    }
+    .btn { padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn.brand { background-color: var(--brand); color: #fff; }
+    .btn.brand:hover { background-color: var(--brand-hover); }
+    .btn.ghost { background: transparent; border: 1px solid var(--brand); color: var(--brand); }
+    .btn.ghost:hover { background: rgba(52, 211, 153, 0.1); }
+    .btn.danger { background-color: #ef4444; color: white; }
+    .btn-full { width: 100%; }
 
-    /* Utility */
-    .fine {
-        font-size: 0.85rem;
-        color: var(--muted);
-    }
-    .tag {
-        display: inline-block;
-        padding: 0.2rem 0.6rem;
-        background-color: var(--border);
-        border-radius: 4px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: var(--text);
-        text-transform: uppercase;
-    }
-    .price {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: var(--brand);
-    }
+    /* ----------------- Detail View (Responsive) ----------------- */
+    .detail-container { display: grid; grid-template-columns: 2fr 3fr; gap: 40px; }
+    .detail-img-box { background: var(--bg); border-radius: 12px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; overflow: hidden; max-height: 500px; }
+    .detail-img-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .detail-info { display: flex; flex-direction: column; gap: 15px; }
+    .contact-box { background: rgba(52, 211, 153, 0.1); border: 1px solid var(--brand); padding: 15px; border-radius: 8px; color: var(--text); }
 
-    /* Modals */
-    .modal {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.7);
-        display: none; /* Controlled by JS */
-        justify-content: center;
-        align-items: center;
-        z-index: 1000;
-    }
-    .modal-content {
-        background-color: var(--card);
-        padding: 2rem;
-        border-radius: 12px;
-        box-shadow: var(--shadow);
-        width: 90%;
-        max-width: 500px;
-        position: relative;
-    }
-    #detailModal .modal-content {
-        max-width: 900px;
-    }
-    .close-modal {
-        position: absolute;
-        top: 1rem;
-        right: 1rem;
-        font-size: 1.5rem;
-        color: var(--muted);
-        cursor: pointer;
-    }
-    .close-modal:hover {
-        color: var(--text);
-    }
+    /* Chat Styling */
+    .chat-box { border: 1px solid var(--border); border-radius: 12px; background: var(--bg); height: 350px; display: flex; flex-direction: column; overflow: hidden; margin-top: 20px; }
+    .chat-messages { flex-grow: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+    .msg-bubble { max-width: 80%; padding: 10px 14px; border-radius: 12px; font-size: 0.95rem; line-height: 1.4; position: relative; word-wrap: break-word; }
+    .msg-bubble.sent { align-self: flex-end; background-color: var(--msg-me); color: #fff; border-bottom-right-radius: 2px; }
+    .msg-bubble.received { align-self: flex-start; background-color: var(--msg-them); color: var(--text); border-bottom-left-radius: 2px; }
+    .msg-meta { font-size: 0.7rem; opacity: 0.8; margin-top: 4px; display: block; text-align: right; }
+    .chat-input-area { padding: 10px; background: var(--card); border-top: 1px solid var(--border); display: flex; gap: 10px; }
+    
+    /* ----------------- Modals ----------------- */
+    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(4px); padding: 20px; }
+    .modal-content { background: var(--card); width: 100%; max-width: 500px; border-radius: 16px; padding: 2rem; position: relative; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow); }
+    .modal-content.large { max-width: 1000px; }
+    .close-modal { position: absolute; top: 1rem; right: 1rem; font-size: 1.5rem; color: var(--muted); cursor: pointer; z-index: 10; }
 
-    /* Detail View Specific */
-    #detailView {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 30px;
-    }
-    @media (min-width: 768px) {
-        #detailView {
-            grid-template-columns: 2fr 3fr;
+    /* ----------------- Mobile Responsive ----------------- */
+    @media (max-width: 768px) {
+        header { padding: 0 1.5rem; }
+        #navLinks { 
+            position: fixed; top: 70px; left: 0; width: 100%; background: var(--card); 
+            flex-direction: column; padding: 1rem; border-bottom: 1px solid var(--border);
+            display: none; box-shadow: var(--shadow);
         }
-    }
-    #detailImage {
-        width: 100%;
-        max-height: 400px;
-        object-fit: contain;
-        border-radius: 8px;
-        background-color: var(--bg);
-    }
-    #messageThread {
-        margin-top: 30px;
-        padding-top: 20px;
-        border-top: 1px solid var(--border);
-    }
-    #messageList {
-        padding: 10px;
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        background-color: var(--bg);
-        margin-bottom: 15px;
-    }
-    .msg-item {
-        padding: 8px 0;
-        border-bottom: 1px dashed var(--border);
-    }
-    .msg-item:last-child {
-        border-bottom: none;
-    }
-    .msg-item .sender {
-        font-weight: 600;
-        color: var(--brand);
-        margin-bottom: 4px;
-        font-size: 0.9rem;
+        #navLinks.show { display: flex; }
+        #mobileMenuBtn { display: block; }
+        
+        .detail-container { grid-template-columns: 1fr; }
+        .filters { flex-direction: column; gap: 1rem; }
+        .filters > div, .filters input, .filters select { width: 100%; }
+        
+        h1 { font-size: 1.5rem; }
+        .stat-card .value { font-size: 2rem; }
     }
     
-    /* Auth Form Tabs */
-    .tab-nav {
-        display: flex;
-        margin-bottom: 20px;
-        border-bottom: 1px solid var(--border);
-    }
-    .tab-btn {
-        padding: 10px 15px;
-        cursor: pointer;
-        font-weight: 600;
-        color: var(--muted);
-        transition: color 0.2s, border-color 0.2s;
-        border-bottom: 2px solid transparent;
-    }
-    .tab-btn.active {
-        color: var(--brand);
-        border-bottom-color: var(--brand);
-    }
+    .fine { font-size: 0.85rem; color: var(--muted); }
   </style>
 </head>
 <body>
 
   <header>
-    <div id="logo" data-view="home" class="nav-link">Book Hub</div>
-    <nav>
-      <div id="navLinks">
-        <div class="nav-link active" data-view="home">Home</div>
-        <div class="nav-link" data-view="listings">All Books</div>
-        <div class="nav-link" data-view="add-listing">Post Book</div>
-        <div class="nav-link" data-view="my-listings">My Listings</div>
-      </div>
+    <div id="logo" onclick="setView('home')">📚 Book Hub</div>
+    
+    <div id="mobileMenuBtn">☰</div>
+
+    <nav id="navLinks">
+      <div class="nav-link active" onclick="setView('home')">Home</div>
+      <div class="nav-link" onclick="setView('listings')">Browse Books</div>
+      <div class="nav-link" onclick="setView('add-listing')">Post Book</div>
+      <div class="nav-link" onclick="setView('my-listings')">My Listings</div>
+      <div id="mobileAuth" style="margin-top: 10px; padding-top:10px; border-top:1px solid var(--border)">
+         </div>
     </nav>
+
     <div id="authControls">
-        <button id="authBtn" class="btn brand">Sign In</button>
-        <button id="themeToggle">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>
-        </button>
+        <button id="themeToggle" title="Toggle Theme">🌙</button>
+        <button id="authBtn" class="btn brand" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Sign In</button>
     </div>
   </header>
 
   <main>
-    <div id="viewContainer">
-        
-        <section id="homeView">
-            <h1>Welcome to the Book Hub Dashboard</h1>
-            <p class="fine">Your central place for buying, selling, and exchanging books with other users.</p>
+    <section id="homeView">
+        <div style="text-align: center; margin-bottom: 3rem;">
+            <h1>Welcome to Book Hub</h1>
+            <p class="fine">The easiest way to buy, sell, and exchange books with your local community.</p>
+        </div>
 
+        <div class="dashboard-grid" style="margin-bottom: 3rem;">
+            <div class="stat-card">
+                <h3>Total Listings</h3>
+                <div class="value" id="statTotalBooks">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Your Listings</h3>
+                <div class="value" id="statMyListings">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Active Users</h3>
+                <div class="value">120+</div>
+            </div>
+        </div>
+
+        <div style="background: var(--card); padding: 2rem; border-radius: 12px; border: 1px solid var(--border); text-align: center;">
+            <h2>How it works</h2>
             <div class="dashboard-grid">
-                <div class="stat-card">
-                    <h3>Total Listings</h3>
-                    <div class="value" id="statTotalBooks">0</div>
-                    <p class="fine">Available across all users.</p>
+                <div>
+                    <div style="font-size: 2rem; margin-bottom: 10px;">📝</div>
+                    <h3>1. Post a Book</h3>
+                    <p class="fine">Upload details, price, and contact info.</p>
                 </div>
-                <div class="stat-card">
-                    <h3>My Listings</h3>
-                    <div class="value" id="statMyListings">0</div>
-                    <p class="fine">Books posted by you.</p>
+                <div>
+                    <div style="font-size: 2rem; margin-bottom: 10px;">🔍</div>
+                    <h3>2. Discover</h3>
+                    <p class="fine">Browse listings from other readers.</p>
                 </div>
-                <div class="stat-card">
-                    <h3>Members</h3>
-                    <div class="value">90+</div>
-                    <p class="fine">Growing community of readers.</p>
-                </div>
-            </div>
-            
-            <h2 style="margin-top: 3rem;">How it works</h2>
-            <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
-                <div class="stat-card" style="border-left: 3px solid var(--brand)">
-                    <h3>1. Sign Up/Login</h3>
-                    <p class="fine">Securely create an account using your email and password.</p>
-                </div>
-                <div class="stat-card" style="border-left: 3px solid var(--brand)">
-                    <h3>2. Post a Book</h3>
-                    <p class="fine">List your book for sale or exchange with details and a picture.</p>
-                </div>
-                <div class="stat-card" style="border-left: 3px solid var(--brand)">
-                    <h3>3. Message Seller</h3>
-                    <p class="fine">Find a book you like and message the seller directly.</p>
+                <div>
+                    <div style="font-size: 2rem; margin-bottom: 10px;">💬</div>
+                    <h3>3. Chat & Deal</h3>
+                    <p class="fine">Message sellers securely to arrange exchange.</p>
                 </div>
             </div>
-        </section>
+        </div>
+    </section>
 
-        <section id="listingsView" class="hidden">
-            <h1>All Book Listings</h1>
-            <p class="fine">Browse all available books from the community.</p>
+    <section id="listingsView" class="hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h1>All Listings</h1>
+        </div>
 
-            <div class="filters" style="background-color: var(--card); padding: 1rem; border-radius: 8px; margin: 20px 0; border: 1px solid var(--border);">
-                <div class="row" style="align-items: flex-end;">
-                    <div class="form-group" style="flex-grow: 1;">
-                        <label for="q">Search by Title/Author/Desc</label>
-                        <input type="text" id="q" placeholder="Enter keywords...">
+        <div class="filters">
+            <input type="text" id="q" placeholder="Search title, author..." style="flex: 2;">
+            <select id="typeFilter" style="flex: 1;">
+                <option value="">All Types</option>
+                <option value="Sale">For Sale</option>
+                <option value="Exchange">Exchange</option>
+            </select>
+            <select id="sortBy" style="flex: 1;">
+                <option value="new">Newest</option>
+                <option value="priceAsc">Price: Low to High</option>
+                <option value="priceDesc">Price: High to Low</option>
+            </select>
+        </div>
+
+        <div id="listingsGrid" class="dashboard-grid"></div>
+        <div id="emptyListings" class="hidden" style="text-align: center; padding: 3rem; color: var(--muted);">No books found matching your criteria.</div>
+    </section>
+
+    <section id="my-listingsView" class="hidden">
+        <h1>My Listings</h1>
+        <p class="fine">Manage books you are selling or exchanging.</p>
+        <div id="myListingsGrid" class="dashboard-grid"></div>
+        <div id="emptyMyListings" class="hidden" style="text-align: center; padding: 3rem; color: var(--muted);">
+            <h3>You haven't posted any books yet.</h3>
+            <button class="btn brand" onclick="setView('add-listing')" style="margin-top: 1rem;">Post a Book</button>
+        </div>
+    </section>
+
+    <section id="add-listingView" class="hidden">
+        <div style="max-width: 600px; margin: 0 auto;">
+            <h1 style="text-align: center;">Post a New Book</h1>
+            <p class="fine" style="text-align: center; margin-bottom: 2rem;">Share your book with the community.</p>
+
+            <form id="listingForm" style="background: var(--card); padding: 2rem; border-radius: 12px; border: 1px solid var(--border);">
+                <div class="form-group">
+                    <label>Book Title *</label>
+                    <input type="text" name="title" required placeholder="e.g. The Great Gatsby">
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div class="form-group">
+                        <label>Author *</label>
+                        <input type="text" name="author" required>
                     </div>
                     <div class="form-group">
-                        <label for="typeFilter">Type</label>
-                        <select id="typeFilter">
-                            <option value="">All Types</option>
-                            <option value="Sale">Sale</option>
-                            <option value="Exchange">Exchange</option>
-                            <option value="Buy">Want to Buy</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="condFilter">Condition</label>
-                        <select id="condFilter">
-                            <option value="">All Conditions</option>
+                        <label>Condition</label>
+                        <select name="condition">
                             <option value="New">New</option>
                             <option value="Like New">Like New</option>
-                            <option value="Good">Good</option>
+                            <option value="Good" selected>Good</option>
                             <option value="Acceptable">Acceptable</option>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label for="sortBy">Sort By</label>
-                        <select id="sortBy">
-                            <option value="new">Newest First</option>
-                            <option value="priceAsc">Price (Low to High)</option>
-                            <option value="priceDesc">Price (High to Low)</option>
-                            <option value="title">Title (A-Z)</option>
-                        </select>
-                    </div>
-                    <button class="btn ghost" id="clearFilters" style="padding: 0.75rem 1.25rem;">Clear</button>
                 </div>
-            </div>
 
-            <div id="emptyListings" class="hidden" style="text-align: center; margin-top: 50px;">
-                <h3 style="color: var(--muted);">No books match your criteria.</h3>
-                <p class="fine">Try clearing your filters or check back later!</p>
-            </div>
-
-            <div id="listingsGrid" class="dashboard-grid">
-                </div>
-        </section>
-
-        <section id="my-listingsView" class="hidden">
-            <h1>My Listings (<span id="myListingsCount">0</span>)</h1>
-            <p class="fine">Manage the books you have posted for the community.</p>
-
-            <div id="emptyMyListings" class="hidden" style="text-align: center; margin-top: 50px;">
-                <h3 style="color: var(--muted);">You haven't posted any books yet.</h3>
-                <p class="fine">Go to the "Post Book" tab to get started!</p>
-            </div>
-            
-            <div id="myListingsGrid" class="dashboard-grid">
-                </div>
-        </section>
-
-        <section id="add-listingView" class="hidden">
-            <h1>Post a New Book</h1>
-            <p class="fine">Fill out the details to add your book to the hub.</p>
-
-            <form id="listingForm" style="max-width: 600px; margin-top: 20px;">
-                <div class="row">
-                    <div class="form-group" style="flex-grow: 2;">
-                        <label for="title">Title *</label>
-                        <input type="text" id="title" name="title" required>
-                    </div>
-                    <div class="form-group" style="flex-grow: 1;">
-                        <label for="author">Author</label>
-                        <input type="text" id="author" name="author">
-                    </div>
-                </div>
                 <div class="form-group">
-                    <label for="description">Description *</label>
-                    <textarea id="description" name="description" required></textarea>
+                    <label>Description *</label>
+                    <textarea name="description" required placeholder="Brief summary, condition notes..." rows="3"></textarea>
                 </div>
-                
-                <div class="row">
-                    <div class="form-group" style="flex-grow: 1;">
-                        <label for="type">Listing Type *</label>
-                        <select id="type" name="type" required>
+
+                <div class="form-group">
+                    <label>Contact Info * (Visible to users)</label>
+                    <input type="text" name="contact" required placeholder="Phone number or Email">
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div class="form-group">
+                        <label>Listing Type</label>
+                        <select name="type" id="typeSelect">
                             <option value="Sale">For Sale</option>
-                            <option value="Exchange">For Exchange</option>
-                            <option value="Buy">Want to Buy</option>
+                            <option value="Exchange">Exchange</option>
                         </select>
                     </div>
-                    <div class="form-group" style="flex-grow: 1;">
-                        <label for="condition">Condition *</label>
-                        <select id="condition" name="condition" required>
-                            <option value="Good">Good</option>
-                            <option value="New">New</option>
-                            <option value="Like New">Like New</option>
-                            <option value="Acceptable">Acceptable</option>
-                        </select>
+                    <div class="form-group">
+                        <label>Price (₹)</label>
+                        <input type="number" name="price" id="priceInput" value="0" min="0" required>
                     </div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="price">Price (₹) * (Enter 0 for Exchange)</label>
-                    <input type="number" id="price" name="price" required min="0">
-                </div>
-                
-                <div class="form-group">
-                    <label for="imageInput">Book Cover Image</label>
-                    <input type="file" id="imageInput" name="image" accept="image/*">
-                    <img id="preview" src="#" alt="Image Preview" style="max-width: 100%; max-height: 200px; margin-top: 10px; border-radius: 4px; display: none;">
                 </div>
 
-                <button type="submit" class="btn brand" style="width: 100%; margin-top: 1rem;">Publish Listing</button>
+                <div class="form-group">
+                    <label>Cover Image</label>
+                    <input type="file" id="imageInput" accept="image/*">
+                    <img id="preview" src="" style="display:none; width: 100%; height: 150px; object-fit: cover; margin-top: 10px; border-radius: 8px;">
+                </div>
+
+                <button type="submit" class="btn brand btn-full">Publish Listing</button>
             </form>
-        </section>
-        
-    </div>
+        </div>
+    </section>
   </main>
-
-  <footer>
-    </footer>
 
   <div id="authModal" class="modal">
     <div class="modal-content">
-        <span class="close-modal" onclick="closeModal(authModal)">&times;</span>
-        
-        <div class="tab-nav">
-            <div class="tab-btn active" data-tab="login">Login</div>
-            <div class="tab-btn" data-tab="signup">Sign Up</div>
+        <span class="close-modal" onclick="closeModal('authModal')">&times;</span>
+        <div style="text-align: center; margin-bottom: 20px;">
+            <h2 id="authTitle">Welcome Back</h2>
+            <div style="display: flex; justify-content: center; gap: 10px; margin-top: 15px;">
+                <button class="btn ghost" id="tabLogin" onclick="switchAuthTab('login')">Login</button>
+                <button class="btn ghost" id="tabSignup" onclick="switchAuthTab('signup')">Sign Up</button>
+            </div>
         </div>
         
         <form id="authForm">
-            <h2 id="authTitle" style="margin-bottom: 1rem;">Login to Book Hub</h2>
-            <p id="authMessage" class="fine" style="margin-bottom: 1.5rem;">Enter your email and password to access your account.</p>
-            
-            <div class="form-group">
-                <label for="authEmail">Email *</label>
-                <input type="email" id="authEmail" name="email" required>
-            </div>
-            
+            <input type="hidden" id="authMode" value="login">
             <div class="form-group" id="nameGroup" style="display:none;">
-                <label for="authName">Name *</label>
-                <input type="text" id="authName" name="name">
+                <label>Full Name</label>
+                <input type="text" id="authName">
             </div>
-            
             <div class="form-group">
-                <label for="authPassword">Password *</label>
-                <input type="password" id="authPassword" name="password" required>
+                <label>Email (must be @gmail.com)</label>
+                <input type="email" id="authEmail" required>
             </div>
-            
-            <input type="hidden" name="name" value="NOT_USED" id="hiddenNameField">
-            
-            <button type="submit" class="btn brand" style="width: 100%; margin-top: 1rem;">Login</button>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="authPassword" required>
+            </div>
+            <button type="submit" class="btn brand btn-full">Continue</button>
         </form>
     </div>
   </div>
 
   <div id="detailModal" class="modal">
-    <div class="modal-content">
-        <span class="close-modal" onclick="closeModal(detailModal)">&times;</span>
-        <h2 id="detailTitle" style="margin-bottom: 1rem;"></h2>
-        <div id="detailContent">
-            </div>
+    <div class="modal-content large">
+        <span class="close-modal" onclick="closeModal('detailModal')">&times;</span>
+        <div id="detailContent"></div>
     </div>
   </div>
 
-
   <script>
-    // --- Global State & Configuration ---
-    const API_BASE = window.location.origin.includes('localhost') ? 'http://localhost:3000/api' : '/api';
-    const ALLOWED_DOMAIN = '@gmail.com';
-
-    // Simple state store using localStorage
-    const store = {
-        // Get user object, which now includes the token
-        get user() { return JSON.parse(localStorage.getItem('hub_user') || 'null') },
-        set user(v) { localStorage.setItem('hub_user', JSON.stringify(v)) },
-        
-        get listings() { return JSON.parse(localStorage.getItem('hub_listings') || '[]') },
-        set listings(v) { localStorage.setItem('hub_listings', JSON.stringify(v)) },
-        currentView: 'home',
-        activeListing: null
-    }
-
+    /* --- CONFIGURATION --- */
+    const API_BASE = '/api'; 
     const qs = s => document.querySelector(s);
-    const qsa = s => document.querySelectorAll(s);
+    
+    // --- STATE MANAGEMENT ---
+    const store = {
+        get user() { return JSON.parse(localStorage.getItem('user') || 'null'); },
+        set user(v) { localStorage.setItem('user', JSON.stringify(v)); },
+        listings: [],
+        activeListing: null
+    };
 
-    // --- Utility Functions ---
-    function openModal(m){ m.style.display='flex' }
-    function closeModal(m){ m.style.display='none' }
-    function escapeHtml(s){ return (s+"").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;','\'':'&#39;'}[m])) }
+    // --- UI HELPERS ---
+    const escapeHtml = (unsafe) => (unsafe || "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;','\'':'&#39;'}[m]));
+    const openModal = (id) => qs('#'+id).style.display = 'flex';
+    const closeModal = (id) => qs('#'+id).style.display = 'none';
+    const toggleMobileMenu = () => qs('#navLinks').classList.toggle('show');
 
-    function showMessage(msg, type = 'info') {
-        // Basic console logging, replace with a UI alert if implemented
-        console.log(`[${type.toUpperCase()}] ${msg}`);
-        alert(msg); // Use alert for simplicity
-    }
-
-    // --- View Control ---
-    const navLinks = qsa('#navLinks .nav-link, #logo');
-
-    function setView(viewName) {
-        // Check if user is logged in before allowing access to protected views
-        if (['my-listings', 'add-listing'].includes(viewName) && !store.user) {
-            showMessage('Please sign in to access this page.', 'info');
-            openModal(qs('#authModal'));
-            return;
-        }
-
-        store.currentView = viewName;
+    // --- API WRAPPER ---
+    async function apiFetch(endpoint, options = {}) {
+        const headers = { 'Content-Type': 'application/json' };
+        if (store.user?.token) headers['Authorization'] = `Bearer ${store.user.token}`;
         
-        qsa('section').forEach(s => s.classList.add('hidden'));
-        qs(`#${viewName}View`).classList.remove('hidden');
-
-        navLinks.forEach(link => {
-            link.classList.toggle('active', link.dataset.view === viewName);
-        });
-        
-        if (viewName === 'listings') {
-            renderListingsGrid();
-        } else if (viewName === 'my-listings') {
-            renderMyListings();
-        }
-    }
-
-
-    // --- API Fetch Utility (Sends Authorization Header) ---
-    async function apiFetch(path, options = {}) {
-        const defaultHeaders = { 'Content-Type': 'application/json' };
-        
-        // Attach JWT token to all requests except login/signup
-        if (store.user && store.user.token && !path.includes('/auth/')) {
-            defaultHeaders['Authorization'] = `Bearer ${store.user.token}`;
-        }
-
-        const response = await fetch(API_BASE + path, {
-            ...options,
-            headers: {
-                ...defaultHeaders,
-                ...options.headers,
-            },
-        });
-
-        if (response.ok) {
-            // Successful DELETE returns 200, but no content
-            if (options.method === 'DELETE' && response.status === 200) {
-                return { success: true };
-            }
-            
-            // GET /books returns an array directly, not wrapped in { data: [...] }
-            if (path === '/books' && options.method === 'GET') {
-                return await response.json();
-            }
-            
-            // For other success status codes (POST, GET one book), expect JSON response
-            const data = await response.json();
-            
-            if (data.success) {
-                return data.data || data; 
-            } else {
-                showMessage(data.message || 'An unknown API error occurred.', 'error');
-                return null;
-            }
-        } else {
-            try {
-                // Read and show server-provided error message
-                const errorBody = await response.json();
-                showMessage(errorBody.message || `API Error: ${response.status} ${response.statusText}`, 'error');
-            } catch (e) {
-                // Fallback for non-JSON errors (like the white screen / HTML error)
-                showMessage(`Network or Server error: ${response.status} ${response.statusText}`, 'error');
-            }
-            // If 401/403, force logout
-            if (response.status === 401 || response.status === 403) {
-                handleLogout();
-            }
+        try {
+            const res = await fetch(API_BASE + endpoint, { ...options, headers });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'API Error');
+            return data;
+        } catch (err) {
+            alert(err.message);
+            if (err.message.includes('token') || err.message.includes('Unauthorized')) logout();
             return null;
         }
     }
 
-
-    // --- Theme Toggle ---
-    const themeToggleBtn = qs('#themeToggle');
-    function toggleTheme() {
-        const isLight = document.body.classList.toggle('light-theme');
-        localStorage.setItem('hub_theme', isLight ? 'light' : 'dark');
-        // Icon change logic
-        themeToggleBtn.innerHTML = isLight ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>' : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>';
-    }
-    themeToggleBtn.addEventListener('click', toggleTheme);
-    const savedTheme = localStorage.getItem('hub_theme');
-    if (savedTheme === 'light') {
-        document.body.classList.add('light-theme');
-        themeToggleBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>';
-    }
-
-    // --- Authentication ---
-    const authBtn = qs('#authBtn');
-    const authModal = qs('#authModal');
-    const authForm = qs('#authForm');
-    const tabBtns = qsa('.tab-btn');
-    const nameGroup = qs('#nameGroup');
-    const hiddenNameField = qs('#hiddenNameField');
-    const authTitle = qs('#authTitle');
-    const authMessage = qs('#authMessage');
-
-    function updateAuthUI() {
-        if (store.user) {
-            authBtn.textContent = store.user.name.split(' ')[0] + ' • Sign Out';
-            authBtn.classList.remove('brand');
-            authBtn.classList.add('ghost');
-        } else {
-            authBtn.textContent = 'Sign In';
-            authBtn.classList.remove('ghost');
-            authBtn.classList.add('brand');
-            if (['my-listings', 'add-listing'].includes(store.currentView)) {
-                setView('home'); // Redirect if view requires login
-            }
-        }
-        updateHomeStats(); 
-    }
-
-    function handleLogout() {
-        store.user = null; 
-        updateAuthUI(); 
-        showMessage('Logged out successfully.', 'info');
-    }
-
-    // Tab switching logic
-    tabBtns.forEach(btn => btn.addEventListener('click', () => {
-        const isLogin = btn.dataset.tab === 'login';
-        
-        tabBtns.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-
-        nameGroup.style.display = isLogin ? 'none' : 'block';
-        
-        // Use the hidden field to track state for the submit handler
-        hiddenNameField.value = isLogin ? 'NOT_USED' : ''; 
-        qs('#authName').required = !isLogin;
-
-        authForm.querySelector('[type="submit"]').textContent = isLogin ? 'Login' : 'Sign Up';
-        authTitle.textContent = isLogin ? 'Login to Book Hub' : 'Create an Account';
-        authMessage.textContent = isLogin ? 'Enter your email and password to access your account.' : `Only emails ending with ${ALLOWED_DOMAIN} are allowed.`;
-        authForm.reset();
-    }));
-    
-    // Set default tab to Login on load
-    qs('.tab-btn[data-tab="login"]').click(); 
-
-    // Attach Sign In/Out button listener
-    authBtn.addEventListener('click', (e) => {
-        if (store.user) {
-            handleLogout();
-        } else {
-            // Open modal to the Login tab
-            qs('.tab-btn[data-tab="login"]').click();
-            openModal(authModal);
-        }
-    });
-
-    authForm.addEventListener('submit', handleAuthSubmit);
-
-    async function handleAuthSubmit(e) {
-        e.preventDefault();
-        const form = e.target;
-        const isLogin = hiddenNameField.value === 'NOT_USED'; 
-
-        const email = form.querySelector('#authEmail').value.trim();
-        const password = form.querySelector('#authPassword').value.trim();
-        const name = isLogin ? '' : form.querySelector('#authName').value.trim();
-
-        if (!email || !password || (!isLogin && !name)) {
-            showMessage('Please fill in all required fields.', 'error');
+    // --- VIEWS ---
+    function setView(view) {
+        if (['add-listing', 'my-listings'].includes(view) && !store.user) {
+            alert("Please sign in first.");
+            openModal('authModal');
             return;
         }
+        document.querySelectorAll('section').forEach(el => el.classList.add('hidden'));
+        qs(`#${view}View`).classList.remove('hidden');
+        document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+        
+        // Find link and make active
+        const activeLink = Array.from(document.querySelectorAll('.nav-link')).find(el => el.textContent.toLowerCase().includes(view.replace('-', ' ')));
+        if(activeLink) activeLink.classList.add('active');
 
-        const payload = { email, password };
-        let path = '/auth/login';
+        qs('#navLinks').classList.remove('show'); // Close mobile menu
 
-        if (!isLogin) {
-            path = '/auth/signup';
-            payload.name = name; 
-        }
-
-        const submitBtn = form.querySelector('[type="submit"]');
-        submitBtn.disabled = true;
-
-        const userData = await apiFetch(path, {
-            method: 'POST',
-            body: JSON.stringify(payload),
-        });
-
-        submitBtn.disabled = false; 
-
-        if (userData) {
-            store.user = userData; 
-            closeModal(authModal);
-            updateAuthUI();
-            showMessage(path.includes('login') ? 'Welcome back! Login successful.' : 'Account created! Welcome to Book Hub.', 'success');
-            loadAndRenderListings(); // Refresh data with new auth status
-            setView('listings'); 
-        }
+        if (view === 'listings') renderListings();
+        if (view === 'my-listings') renderMyListings();
     }
 
+    // --- RENDER LISTINGS ---
+    function createCard(book, isMine) {
+        const div = document.createElement('div');
+        div.className = 'listing-card';
+        div.onclick = (e) => { 
+             // If remove button clicked, don't open modal
+            if(e.target.tagName === 'BUTTON') return; 
+            showDetails(book); 
+        };
 
-    // --- Listings/Data Fetch and Rendering ---
+        const priceTag = book.type === 'Exchange' 
+            ? '<span class="type-exchange">Exchange</span>' 
+            : `<span class="price">₹${book.price}</span>`;
 
-    function applyFilters(data, forMyListings) {
-        const q = qs('#q');
-        const typeFilter = qs('#typeFilter');
-        const condFilter = qs('#condFilter');
-        const sortBy = qs('#sortBy');
-
-        let res = data;
-
-        if (forMyListings && store.user) {
-            res = res.filter(d => d.owner.userId === store.user.userId); 
-        }
-
-        const term = q.value.trim().toLowerCase();
-        res = res.filter(d => {
-            const str = (d.title + ' ' + d.author + ' ' + d.description).toLowerCase();
-            if (term && !str.includes(term)) return false;
-            if (typeFilter.value && d.type !== typeFilter.value) return false;
-            if (condFilter.value && d.condition !== condFilter.value) return false;
-            return true;
-        });
-
-        switch (sortBy.value) {
-            case 'priceAsc': res.sort((a, b) => a.price - b.price); break;
-            case 'priceDesc': res.sort((a, b) => b.price - a.price); break;
-            case 'title': res.sort((a, b) => a.title.localeCompare(b.title)); break;
-            default: res.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        }
-        return res;
-    }
-
-    function createListingCard(d, isOwnerView) {
-        const ownerName = d.owner && d.owner.name ? d.owner.name.split(' ')[0] : 'Unknown';
-        const priceDisplay = d.type === 'Exchange' ? `<span class="tag" style="background:var(--brand-2); color:white">EXCHANGE</span>`
-            : d.type === 'Buy' ? `<span class="tag" style="background:#f97316; color:white">WANT TO BUY</span>` // Use a different color for 'Want to Buy'
-            : `<span class="price">₹ ${Number(d.price).toLocaleString()}</span>`;
-
-        const card = document.createElement('div');
-        card.className = 'listing-card';
-        card.innerHTML = `
-            <img src="${d.image || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="100%" height="100%" fill="var(--border)"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="var(--muted)" font-family="Inter" font-size="16">No Cover</text></svg>'}" alt="${escapeHtml(d.title)} Cover">
+        div.innerHTML = `
+            <img src="${book.image || 'https://via.placeholder.com/400x300?text=No+Cover'}" alt="Cover">
             <div class="info">
-                <div class="row" style="justify-content:space-between">
-                    <div class="tag">${escapeHtml(d.condition)}</div>
-                    ${priceDisplay}
+                <div class="row">
+                    <span class="tag">${book.condition}</span>
+                    ${priceTag}
                 </div>
-                <h3>${escapeHtml(d.title)}</h3>
-                <div class="fine">by ${escapeHtml(d.author || 'Unknown')}</div>
-                <div class="meta">
-                    <span>Type: ${escapeHtml(d.type)}</span> | 
-                    <span>Posted by: ${ownerName}</span>
-                </div>
-                <div class="row" style="margin-top:auto; padding-top:10px; border-top:1px dashed var(--border)">
-                    <button class="btn ghost grow" data-action="view-details">Details & Messages</button>
-                    ${isOwnerView ? `<button class="btn brand" style="background:#dc2626" data-action="remove">Remove</button>` : ''}
-                </div>
+                <h3>${escapeHtml(book.title)}</h3>
+                <p class="fine">${escapeHtml(book.author)}</p>
+                ${isMine ? `<button class="btn danger" onclick="deleteListing('${book._id}')" style="margin-top:auto; padding:0.5rem;">Delete Listing</button>` : ''}
             </div>
-        `; 
-        card.addEventListener('click', (e) => {
-            const action = e.target.dataset.action;
-            if (action === 'remove') {
-                handleDeleteListing(d._id, d.title);
-            } else {
-                showDetailModal(d);
-            }
-        });
-        return card;
+        `;
+        return div;
     }
 
-    function renderListingsGrid() {
-        const allData = store.listings;
-        const filteredData = applyFilters(allData, false);
+    function renderListings() {
         const grid = qs('#listingsGrid');
         grid.innerHTML = '';
+        const q = qs('#q').value.toLowerCase();
+        const type = qs('#typeFilter').value;
+        const sort = qs('#sortBy').value;
 
-        if (!filteredData.length) {
-            qs('#emptyListings').classList.remove('hidden');
-            return;
-        }
-        qs('#emptyListings').classList.add('hidden');
-        filteredData.forEach(d => grid.appendChild(createListingCard(d, false)));
+        let filtered = store.listings.filter(b => {
+            const textMatch = b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q);
+            const typeMatch = !type || b.type === type;
+            return textMatch && typeMatch;
+        });
+
+        if (sort === 'priceAsc') filtered.sort((a,b) => a.price - b.price);
+        if (sort === 'priceDesc') filtered.sort((a,b) => b.price - a.price);
+        if (sort === 'new') filtered.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        if (filtered.length === 0) qs('#emptyListings').classList.remove('hidden');
+        else qs('#emptyListings').classList.add('hidden');
+
+        filtered.forEach(b => grid.appendChild(createCard(b, false)));
     }
 
     function renderMyListings() {
         const grid = qs('#myListingsGrid');
         grid.innerHTML = '';
-
-        if (!store.user) {
-            qs('#emptyMyListings').classList.remove('hidden');
-            qs('#myListingsCount').textContent = '0';
-            return;
-        }
+        const myBooks = store.listings.filter(b => b.owner.userId === store.user?.userId);
         
-        const myListings = applyFilters(store.listings, true);
+        qs('#statMyListings').textContent = myBooks.length;
         
-        qs('#myListingsCount').textContent = myListings.length;
+        if (myBooks.length === 0) qs('#emptyMyListings').classList.remove('hidden');
+        else qs('#emptyMyListings').classList.add('hidden');
 
-        if (!myListings.length) {
-            qs('#emptyMyListings').classList.remove('hidden');
-            return;
-        }
-        qs('#emptyMyListings').classList.add('hidden');
-        myListings.forEach(d => grid.appendChild(createListingCard(d, true)));
+        myBooks.forEach(b => grid.appendChild(createCard(b, true)));
     }
 
-    function updateHomeStats() {
-        qs('#statTotalBooks').textContent = store.listings.length;
-        if (store.user) {
-            const myListings = store.listings.filter(d => d.owner.userId === store.user.userId);
-            qs('#statMyListings').textContent = myListings.length;
-        } else {
-            qs('#statMyListings').textContent = '0';
-        }
-    }
+    // --- DETAIL & CHAT ---
+    function showDetails(book) {
+        store.activeListing = book;
+        const isOwner = store.user && store.user.userId === book.owner.userId;
+        const msgs = book.msgs || [];
 
-    async function loadAndRenderListings() {
-        const data = await apiFetch('/books', { method: 'GET' }); 
-        if (data) {
-            store.listings = data; 
-            renderListingsGrid();
-            renderMyListings(); 
-            updateHomeStats();
-        }
-    }
-
-    // Event Listeners for Filters
-    qsa('#q, #typeFilter, #condFilter, #sortBy').forEach(el => el.addEventListener('input', () => {
-        renderListingsGrid();
-        renderMyListings(); // Keep my-listings updated if that view is active
-    }));
-    
-    qs('#clearFilters').addEventListener('click', () => {
-        qs('#q').value = '';
-        qs('#typeFilter').value = '';
-        qs('#condFilter').value = '';
-        qs('#sortBy').value = 'new';
-        renderListingsGrid();
-    });
-
-    // --- Detail Modal Functions ---
-    const detailModal = qs('#detailModal');
-    const detailContent = qs('#detailContent');
-
-    function renderMessages(msgs) {
-        // Sort messages by timestamp
-        msgs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
-        return msgs.map(m => `
-            <div class="msg-item">
-                <div class="sender">${escapeHtml(m.by)} <span class="fine" style="float:right">${new Date(m.timestamp).toLocaleString()}</span></div>
-                <div>${escapeHtml(m.text)}</div>
-            </div>
-        `).join('');
-    }
-
-    function showDetailModal(listing) {
-        // Find the listing in the global store to ensure we have the full object (including messages)
-        const fullListing = store.listings.find(d => d._id === listing._id) || listing;
-        store.activeListing = fullListing;
-
-        qs('#detailTitle').textContent = fullListing.title;
-        
-        const isOwner = store.user && store.user.userId === fullListing.owner.userId;
-        const ownerName = escapeHtml(fullListing.owner.name);
-        
-        const priceDisplay = fullListing.type === 'Exchange' ? `<span class="price" style="color:var(--brand-2)">EXCHANGE</span>` 
-            : fullListing.type === 'Buy' ? `<span class="price" style="color:#f97316">WANT TO BUY</span>`
-            : `<span class="price" style="color:var(--brand)">₹ ${Number(fullListing.price).toLocaleString()}</span>`;
-            
-        const msgs = fullListing.msgs || [];
-
-        detailContent.innerHTML = `
-            <div id="detailView">
-                <div id="detailMedia">
-                    <img id="detailImage" src="${fullListing.image || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="100%" height="100%" fill="var(--border)"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="var(--muted)" font-family="Inter" font-size="16">No Cover</text></svg>'}" alt="${escapeHtml(fullListing.title)} Cover">
+        const html = `
+            <div class="detail-container">
+                <div class="detail-img-box">
+                    <img src="${book.image || 'https://via.placeholder.com/400x300?text=No+Cover'}">
                 </div>
-                <div id="detailInfo">
-                    <h1>${escapeHtml(fullListing.title)}</h1>
-                    <div class="fine" style="margin-bottom:15px">${escapeHtml(fullListing.author || 'Unknown')} • ${escapeHtml(fullListing.condition)}</div>
-                    ${priceDisplay}
-                    <div style="margin-top:10px; color:var(--muted)">Posted by: <strong>${ownerName}</strong> (${escapeHtml(fullListing.owner.email)})</div>
+                <div class="detail-info">
+                    <div>
+                        <h1>${escapeHtml(book.title)}</h1>
+                        <p class="fine">${escapeHtml(book.author)} • ${book.condition}</p>
+                    </div>
                     
-                    <p style="margin-top:20px">${escapeHtml(fullListing.description)}</p>
+                    <div class="row">
+                         <span class="tag" style="font-size:1rem; background:var(--brand); color:#fff">${book.type}</span>
+                         <span class="price" style="font-size:1.5rem"> ${book.type === 'Exchange' ? 'Exchange' : '₹'+book.price}</span>
+                    </div>
 
-                    ${isOwner ? `<button class="btn brand" style="background:#dc2626; margin-top:20px" data-action="remove-detail">Remove Listing</button>` : ''}
-                    
-                    <div id="messageThread">
-                        <h3>Messages (${msgs.length}) ${isOwner ? '<span class="fine">(Only visible to you)</span>' : ''}</h3>
-                        <div id="messageList" style="max-height: 250px; overflow-y: auto; margin-bottom: 20px;">
-                            ${isOwner ? renderMessages(msgs) : '<p class="fine" style="text-align:center">Please sign in to view messages or send your own!</p>'}
+                    <div class="contact-box">
+                        <strong>📞 Seller Contact:</strong> ${escapeHtml(book.contact)}<br>
+                        <small>Posted by: ${escapeHtml(book.owner.name)}</small>
+                    </div>
+
+                    <p>${escapeHtml(book.description)}</p>
+
+                    <div class="chat-box">
+                        <div class="chat-messages" id="chatMsgs">
+                            ${renderChatBubbles(msgs)}
                         </div>
-                        
-                        ${store.user && !isOwner ? `
-                        <form id="messageForm">
-                            <label>Send a message to the seller</label>
-                            <textarea id="msgText" placeholder="I'm interested in this book, is it still available?" required></textarea>
-                            <div style="text-align:right; margin-top:10px">
-                                <button type="submit" class="btn brand">Send Message</button>
-                            </div>
-                        </form>` : store.user && isOwner ? '' : `
-                        <p class="fine" style="text-align:center">Please sign in to send a message to the seller.</p>
-                        <button class="btn brand" style="width:100%" onclick="openModal(authModal); closeModal(detailModal)">Sign In to Message</button>
-                        `}
+                        ${store.user ? `
+                        <form class="chat-input-area" onsubmit="sendMessage(event)">
+                            <input type="text" id="chatInput" placeholder="Type a message..." required autocomplete="off">
+                            <button type="submit" class="btn brand">Send</button>
+                        </form>
+                        ` : `<div style="padding:10px; text-align:center; background:var(--card)" class="fine">Sign in to chat</div>`}
                     </div>
                 </div>
             </div>
         `;
-
-        const messageForm = qs('#messageForm');
-        if (messageForm) {
-            messageForm.addEventListener('submit', handleAddMessage);
-        }
-        
-        // Listener for remove button inside detail view
-        qs('#detailContent').addEventListener('click', (e) => {
-            if (e.target.dataset.action === 'remove-detail' && store.activeListing) {
-                handleDeleteListing(store.activeListing._id, store.activeListing.title);
-                closeModal(detailModal); 
-            }
-        });
-
-        openModal(detailModal);
+        qs('#detailContent').innerHTML = html;
+        openModal('detailModal');
+        scrollToBottom();
     }
 
-    // --- CRUD Handlers ---
-
-    // 1. Add Listing
-    const listingForm = qs('#listingForm');
-    const imageInput = qs('#imageInput');
-    const preview = qs('#preview'); 
-    let previewBase64 = ''; 
-
-    imageInput.addEventListener('change', (e)=>{
-        const f = e.target.files?.[0];
-        if(!f){
-            preview.style.display='none';
-            previewBase64='';
-            return
-        }
-        const reader = new FileReader();
-        reader.onload = ()=>{
-            preview.src = reader.result;
-            preview.style.display='inline-block';
-            previewBase64 = reader.result; // Store Base64 string
-        }
-        reader.readAsDataURL(f);
-    });
-
-    listingForm.addEventListener('submit', handleListingSubmit);
-
-    async function handleListingSubmit(e) {
-        e.preventDefault();
-        if (!store.user) {
-            showMessage('You must be signed in to add a listing.', 'error');
-            openModal(authModal);
-            return;
-        }
+    function renderChatBubbles(msgs) {
+        if (msgs.length === 0) return '<div class="fine" style="text-align:center; margin-top:20px;">No messages yet. Start the conversation!</div>';
         
-        const formData = new FormData(listingForm);
+        return msgs.map(m => {
+            const isMe = store.user && m.by === store.user.name;
+            return `
+                <div class="msg-bubble ${isMe ? 'sent' : 'received'}">
+                    ${escapeHtml(m.text)}
+                    <span class="msg-meta">${isMe ? 'Me' : escapeHtml(m.by)} • ${new Date(m.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function scrollToBottom() {
+        const el = qs('#chatMsgs');
+        if(el) el.scrollTop = el.scrollHeight;
+    }
+
+    async function sendMessage(e) {
+        e.preventDefault();
+        const input = qs('#chatInput');
+        const text = input.value.trim();
+        if (!text) return;
+
+        const res = await apiFetch(`/books/${store.activeListing._id}/message`, {
+            method: 'POST', body: JSON.stringify({ text })
+        });
+
+        if (res) {
+            // Update local state
+            store.activeListing.msgs.push(res);
+            const masterIdx = store.listings.findIndex(b => b._id === store.activeListing._id);
+            if(masterIdx > -1) store.listings[masterIdx].msgs.push(res);
+            
+            // Re-render chat
+            qs('#chatMsgs').innerHTML = renderChatBubbles(store.activeListing.msgs);
+            input.value = '';
+            scrollToBottom();
+        }
+    }
+
+    // --- ACTIONS ---
+    async function loadBooks() {
+        const data = await apiFetch('/books');
+        if (data) {
+            store.listings = data;
+            qs('#statTotalBooks').textContent = data.length;
+            renderListings();
+        }
+    }
+
+    async function deleteListing(id) {
+        if(!confirm("Delete this listing?")) return;
+        const res = await apiFetch(`/books/${id}`, { method: 'DELETE' });
+        if(res && res.success) {
+            store.listings = store.listings.filter(b => b._id !== id);
+            renderListings();
+            renderMyListings();
+            closeModal('detailModal');
+        }
+    }
+
+    // --- FORMS ---
+    qs('#listingForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const f = e.target;
+        const img = qs('#preview').src;
+        // Check if src is empty or placeholder (simple check)
+        const finalImg = img.length > 100 ? img : ''; 
+
         const payload = {
-            title: formData.get('title'),
-            author: formData.get('author'),
-            description: formData.get('description'),
-            price: formData.get('price'),
-            type: formData.get('type'),
-            condition: formData.get('condition'),
-            image: previewBase64, 
+            title: f.title.value,
+            author: f.author.value,
+            condition: f.condition.value,
+            description: f.description.value,
+            contact: f.contact.value,
+            type: f.type.value,
+            price: f.price.value,
+            image: finalImg
         };
 
-        const submitBtn = listingForm.querySelector('[type="submit"]');
-        submitBtn.disabled = true;
-
-        const newBook = await apiFetch('/books', {
-            method: 'POST',
-            body: JSON.stringify(payload)
-        });
-        
-        submitBtn.disabled = false;
-
-        if (newBook) {
-            showMessage(`Listing for "${newBook.title}" successfully published!`, 'success');
-            listingForm.reset();
-            qs('#preview').style.display = 'none';
-            previewBase64 = ''; 
-            
-            // Add the new book to the local cache and refresh all views
-            store.listings = [newBook, ...store.listings]; 
-            
-            renderListingsGrid();
-            renderMyListings();
-            updateHomeStats();
+        const res = await apiFetch('/books', { method: 'POST', body: JSON.stringify(payload) });
+        if(res && res.success) {
+            f.reset();
+            qs('#preview').style.display='none';
+            store.listings.unshift(res.data);
             setView('listings');
         }
+    };
+
+    qs('#imageInput').onchange = (e) => {
+        const file = e.target.files[0];
+        if(file) {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                qs('#preview').src = ev.target.result;
+                qs('#preview').style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    // --- AUTH ---
+    function switchAuthTab(tab) {
+        const isLogin = tab === 'login';
+        qs('#authMode').value = tab;
+        qs('#nameGroup').style.display = isLogin ? 'none' : 'block';
+        qs('#tabLogin').className = `btn ${isLogin ? 'brand' : 'ghost'}`;
+        qs('#tabSignup').className = `btn ${!isLogin ? 'brand' : 'ghost'}`;
+        qs('#authTitle').textContent = isLogin ? 'Welcome Back' : 'Create Account';
     }
 
-    // --- Delete Listing ---
-    async function handleDeleteListing(id, title) {
-        if (!confirm(`Are you sure you want to delete the listing for "${title}"? This action cannot be undone.`)) {
-            return;
+    qs('#authForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const mode = qs('#authMode').value;
+        const endpoint = mode === 'login' ? '/auth/login' : '/auth/signup';
+        const body = {
+            email: qs('#authEmail').value,
+            password: qs('#authPassword').value
+        };
+        if(mode === 'signup') body.name = qs('#authName').value;
+
+        const res = await apiFetch(endpoint, { method: 'POST', body: JSON.stringify(body) });
+        if(res && res.success) {
+            store.user = res.data;
+            updateAuthUI();
+            closeModal('authModal');
+            loadBooks(); // reload to get my-listings specific data if needed
         }
-        
-        const response = await apiFetch(`/books/${id}`, {
-            method: 'DELETE'
-        });
-        
-        if (response) {
-            showMessage('Listing deleted successfully.', 'success');
-            
-            // Optimistically update cache and re-render
-            store.listings = store.listings.filter(d => d._id !== id);
-            renderMyListings(); 
-            renderListingsGrid(); 
-            updateHomeStats(); 
+    };
+
+    function updateAuthUI() {
+        const btn = qs('#authBtn');
+        if (store.user) {
+            btn.textContent = 'Sign Out';
+            btn.className = 'btn ghost';
+            btn.onclick = logout;
+        } else {
+            btn.textContent = 'Sign In';
+            btn.className = 'btn brand';
+            btn.onclick = () => openModal('authModal');
         }
     }
 
-    // 3. Add Message
-    async function handleAddMessage(e) {
-      e.preventDefault();
-      if (!store.user || !store.activeListing) {
-          showMessage('Please sign in to send a message.', 'error');
-          openModal(authModal);
-          return;
-      }
-
-      const msgTextEl = qs('#msgText');
-      const text = msgTextEl.value.trim();
-      if (!text) return;
-
-      const messagePayload = {
-        text: text
-      };
-      
-      const submitBtn = e.target.querySelector('[type="submit"]');
-      submitBtn.disabled = true;
-
-      const response = await apiFetch(`/books/${store.activeListing._id}/message`, {
-        method: 'POST',
-        body: JSON.stringify(messagePayload)
-      });
-      
-      submitBtn.disabled = false;
-
-      if (response) {
-        // Response is the new message object
-        
-        // Update the message array in the local cache
-        const localListing = store.listings.find(d => d._id === store.activeListing._id);
-        if (localListing) {
-            localListing.msgs.push(response);
-            store.activeListing.msgs.push(response); 
-        }
-        
-        // Re-render the messages in the modal
-        qs('#messageList').innerHTML = renderMessages(store.activeListing.msgs);
-        msgTextEl.value = '';
-        showMessage('Message sent successfully. Only the owner can view it.', 'success');
-      }
-    }
-
-
-    // --- Initialization ---
-    document.addEventListener('DOMContentLoaded', () => {
+    function logout() {
+        store.user = null;
+        setView('home');
         updateAuthUI();
-        loadAndRenderListings();
-        setView(store.currentView);
-        
-        // Setup navigation listeners to call setView
-        navLinks.forEach(link => {
-            link.addEventListener('click', (e) => {
-                setView(e.currentTarget.dataset.view);
-            });
-        });
-    });
+    }
+
+    // --- INITIALIZATION ---
+    qs('#mobileMenuBtn').addEventListener('click', toggleMobileMenu);
+    qs('#themeToggle').onclick = () => {
+        document.body.classList.toggle('light-theme');
+        qs('#themeToggle').textContent = document.body.classList.contains('light-theme') ? '☀️' : '🌙';
+    };
+
+    // Filter listeners
+    ['#q', '#typeFilter', '#sortBy'].forEach(s => qs(s).addEventListener('input', renderListings));
+
+    // Start
+    loadBooks();
+    updateAuthUI();
   </script>
 </body>
 </html>
