@@ -92,6 +92,7 @@
     .btn.ghost:hover { background: rgba(52, 211, 153, 0.1); }
     .btn.danger { background-color: #ef4444; color: white; }
     .btn-full { width: 100%; }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
     /* ----------------- Detail View (Responsive) ----------------- */
     .detail-container { display: grid; grid-template-columns: 2fr 3fr; gap: 40px; }
@@ -135,6 +136,7 @@
     }
     
     .fine { font-size: 0.85rem; color: var(--muted); }
+    #authError { color: #ef4444; font-size: 0.85rem; margin-top: 8px; min-height: 1em; }
   </style>
 </head>
 <body>
@@ -324,7 +326,8 @@
                 <label>Password</label>
                 <input type="password" id="authPassword" required>
             </div>
-            <button type="submit" class="btn brand btn-full">Continue</button>
+            <div id="authError"></div>
+            <button type="submit" class="btn brand btn-full" id="authSubmitBtn">Continue</button>
         </form>
     </div>
   </div>
@@ -336,89 +339,132 @@
     </div>
   </div>
 
-  <script>
-    /* --- CONFIGURATION --- */
-    const API_BASE = '/api'; 
+  <script type="module">
+    // --- FIREBASE SDK IMPORTS ---
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-analytics.js";
+    import {
+      getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+      onAuthStateChanged, signOut, updateProfile
+    } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+    import {
+      getDatabase, ref, push, set, remove, onValue, update
+    } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
+
+    // --- FIREBASE CONFIG ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyDAfAqnTxzYm82VHIaLJyXe7sO198PbZ4s",
+      authDomain: "webbook-fd668.firebaseapp.com",
+      databaseURL: "https://webbook-fd668-default-rtdb.firebaseio.com",
+      projectId: "webbook-fd668",
+      storageBucket: "webbook-fd668.firebasestorage.app",
+      messagingSenderId: "523360312475",
+      appId: "1:523360312475:web:4a607a07def6d0fa0cfa3e",
+      measurementId: "G-H6Y3E4N24S"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    let analytics;
+    try { analytics = getAnalytics(app); } catch (e) { /* analytics can fail on some hosts/blockers, ignore */ }
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
     const qs = s => document.querySelector(s);
-    
+
     // --- STATE MANAGEMENT ---
     const store = {
-        get user() { return JSON.parse(localStorage.getItem('user') || 'null'); },
-        set user(v) { localStorage.setItem('user', JSON.stringify(v)); },
+        user: null,      // { userId, name, email }
         listings: [],
         activeListing: null
     };
 
     // --- UI HELPERS ---
-    const escapeHtml = (unsafe) => (unsafe || "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;','\'':'&#39;'}[m]));
+    const escapeHtml = (unsafe) => (unsafe || "").toString().replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
     const openModal = (id) => qs('#'+id).style.display = 'flex';
     const closeModal = (id) => qs('#'+id).style.display = 'none';
     const toggleMobileMenu = () => qs('#navLinks').classList.toggle('show');
 
-    // --- API WRAPPER ---
-    async function apiFetch(endpoint, options = {}) {
-        const headers = { 'Content-Type': 'application/json' };
-        if (store.user?.token) headers['Authorization'] = `Bearer ${store.user.token}`;
-        
-        try {
-            const res = await fetch(API_BASE + endpoint, { ...options, headers });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.message || 'API Error');
-            return data;
-        } catch (err) {
-            alert(err.message);
-            if (err.message.includes('token') || err.message.includes('Unauthorized')) logout();
-            return null;
-        }
+    function friendlyAuthError(err) {
+        const code = err?.code || '';
+        const map = {
+            'auth/email-already-in-use': 'That email is already registered. Try logging in instead.',
+            'auth/invalid-email': 'Please enter a valid email address.',
+            'auth/weak-password': 'Password should be at least 6 characters.',
+            'auth/user-not-found': 'No account found with that email. Try signing up.',
+            'auth/wrong-password': 'Incorrect password. Please try again.',
+            'auth/invalid-credential': 'Incorrect email or password.',
+            'auth/too-many-requests': 'Too many attempts. Please wait a moment and try again.',
+            'auth/network-request-failed': 'Network error. Check your internet connection.'
+        };
+        return map[code] || (err?.message || 'Something went wrong. Please try again.');
     }
 
+    // --- AUTH STATE LISTENER ---
+    onAuthStateChanged(auth, (fbUser) => {
+        if (fbUser) {
+            store.user = {
+                userId: fbUser.uid,
+                name: fbUser.displayName || (fbUser.email ? fbUser.email.split('@')[0] : 'User'),
+                email: fbUser.email
+            };
+        } else {
+            store.user = null;
+        }
+        updateAuthUI();
+        renderListings();
+        if (!qs('#my-listingsView').classList.contains('hidden')) renderMyListings();
+    });
+
     // --- VIEWS ---
-    function setView(view) {
+    window.setView = function(view) {
         if (['add-listing', 'my-listings'].includes(view) && !store.user) {
-            alert("Please sign in first.");
             openModal('authModal');
             return;
         }
         document.querySelectorAll('section').forEach(el => el.classList.add('hidden'));
         qs(`#${view}View`).classList.remove('hidden');
         document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
-        
-        // Find link and make active
+
         const activeLink = Array.from(document.querySelectorAll('.nav-link')).find(el => el.textContent.toLowerCase().includes(view.replace('-', ' ')));
-        if(activeLink) activeLink.classList.add('active');
+        if (activeLink) activeLink.classList.add('active');
 
         qs('#navLinks').classList.remove('show'); // Close mobile menu
 
         if (view === 'listings') renderListings();
         if (view === 'my-listings') renderMyListings();
-    }
+    };
 
     // --- RENDER LISTINGS ---
     function createCard(book, isMine) {
         const div = document.createElement('div');
         div.className = 'listing-card';
-        div.onclick = (e) => { 
-             // If remove button clicked, don't open modal
-            if(e.target.tagName === 'BUTTON') return; 
-            showDetails(book); 
+        div.onclick = (e) => {
+            if (e.target.tagName === 'BUTTON') return;
+            showDetails(book);
         };
 
-        const priceTag = book.type === 'Exchange' 
-            ? '<span class="type-exchange">Exchange</span>' 
+        const priceTag = book.type === 'Exchange'
+            ? '<span class="type-exchange">Exchange</span>'
             : `<span class="price">₹${book.price}</span>`;
 
         div.innerHTML = `
             <img src="${book.image || 'https://via.placeholder.com/400x300?text=No+Cover'}" alt="Cover">
             <div class="info">
                 <div class="row">
-                    <span class="tag">${book.condition}</span>
+                    <span class="tag">${escapeHtml(book.condition)}</span>
                     ${priceTag}
                 </div>
                 <h3>${escapeHtml(book.title)}</h3>
                 <p class="fine">${escapeHtml(book.author)}</p>
-                ${isMine ? `<button class="btn danger" onclick="deleteListing('${book._id}')" style="margin-top:auto; padding:0.5rem;">Delete Listing</button>` : ''}
+                ${isMine ? `<button class="btn danger" data-id="${book._id}" style="margin-top:auto; padding:0.5rem;">Delete Listing</button>` : ''}
             </div>
         `;
+        if (isMine) {
+            div.querySelector('.btn.danger').addEventListener('click', (e) => {
+                e.stopPropagation();
+                deleteListing(book._id);
+            });
+        }
         return div;
     }
 
@@ -430,14 +476,14 @@
         const sort = qs('#sortBy').value;
 
         let filtered = store.listings.filter(b => {
-            const textMatch = b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q);
+            const textMatch = (b.title || '').toLowerCase().includes(q) || (b.author || '').toLowerCase().includes(q);
             const typeMatch = !type || b.type === type;
             return textMatch && typeMatch;
         });
 
-        if (sort === 'priceAsc') filtered.sort((a,b) => a.price - b.price);
-        if (sort === 'priceDesc') filtered.sort((a,b) => b.price - a.price);
-        if (sort === 'new') filtered.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+        if (sort === 'priceAsc') filtered.sort((a, b) => (a.price || 0) - (b.price || 0));
+        if (sort === 'priceDesc') filtered.sort((a, b) => (b.price || 0) - (a.price || 0));
+        if (sort === 'new') filtered.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
         if (filtered.length === 0) qs('#emptyListings').classList.remove('hidden');
         else qs('#emptyListings').classList.add('hidden');
@@ -448,10 +494,10 @@
     function renderMyListings() {
         const grid = qs('#myListingsGrid');
         grid.innerHTML = '';
-        const myBooks = store.listings.filter(b => b.owner.userId === store.user?.userId);
-        
+        const myBooks = store.listings.filter(b => store.user && b.owner && b.owner.userId === store.user.userId);
+
         qs('#statMyListings').textContent = myBooks.length;
-        
+
         if (myBooks.length === 0) qs('#emptyMyListings').classList.remove('hidden');
         else qs('#emptyMyListings').classList.add('hidden');
 
@@ -461,7 +507,6 @@
     // --- DETAIL & CHAT ---
     function showDetails(book) {
         store.activeListing = book;
-        const isOwner = store.user && store.user.userId === book.owner.userId;
         const msgs = book.msgs || [];
 
         const html = `
@@ -472,17 +517,17 @@
                 <div class="detail-info">
                     <div>
                         <h1>${escapeHtml(book.title)}</h1>
-                        <p class="fine">${escapeHtml(book.author)} • ${book.condition}</p>
+                        <p class="fine">${escapeHtml(book.author)} • ${escapeHtml(book.condition)}</p>
                     </div>
-                    
+
                     <div class="row">
-                         <span class="tag" style="font-size:1rem; background:var(--brand); color:#fff">${book.type}</span>
-                         <span class="price" style="font-size:1.5rem"> ${book.type === 'Exchange' ? 'Exchange' : '₹'+book.price}</span>
+                         <span class="tag" style="font-size:1rem; background:var(--brand); color:#fff">${escapeHtml(book.type)}</span>
+                         <span class="price" style="font-size:1.5rem"> ${book.type === 'Exchange' ? 'Exchange' : '₹' + book.price}</span>
                     </div>
 
                     <div class="contact-box">
                         <strong>📞 Seller Contact:</strong> ${escapeHtml(book.contact)}<br>
-                        <small>Posted by: ${escapeHtml(book.owner.name)}</small>
+                        <small>Posted by: ${escapeHtml(book.owner?.name)}</small>
                     </div>
 
                     <p>${escapeHtml(book.description)}</p>
@@ -492,7 +537,7 @@
                             ${renderChatBubbles(msgs)}
                         </div>
                         ${store.user ? `
-                        <form class="chat-input-area" onsubmit="sendMessage(event)">
+                        <form class="chat-input-area" id="chatForm">
                             <input type="text" id="chatInput" placeholder="Type a message..." required autocomplete="off">
                             <button type="submit" class="btn brand">Send</button>
                         </form>
@@ -502,19 +547,21 @@
             </div>
         `;
         qs('#detailContent').innerHTML = html;
+        const chatForm = qs('#chatForm');
+        if (chatForm) chatForm.addEventListener('submit', sendMessage);
         openModal('detailModal');
         scrollToBottom();
     }
 
     function renderChatBubbles(msgs) {
-        if (msgs.length === 0) return '<div class="fine" style="text-align:center; margin-top:20px;">No messages yet. Start the conversation!</div>';
-        
+        if (!msgs || msgs.length === 0) return '<div class="fine" style="text-align:center; margin-top:20px;">No messages yet. Start the conversation!</div>';
+
         return msgs.map(m => {
-            const isMe = store.user && m.by === store.user.name;
+            const isMe = store.user && m.byId === store.user.userId;
             return `
                 <div class="msg-bubble ${isMe ? 'sent' : 'received'}">
                     ${escapeHtml(m.text)}
-                    <span class="msg-meta">${isMe ? 'Me' : escapeHtml(m.by)} • ${new Date(m.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                    <span class="msg-meta">${isMe ? 'Me' : escapeHtml(m.by)} • ${new Date(m.timestamp).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}</span>
                 </div>
             `;
         }).join('');
@@ -522,60 +569,86 @@
 
     function scrollToBottom() {
         const el = qs('#chatMsgs');
-        if(el) el.scrollTop = el.scrollHeight;
+        if (el) el.scrollTop = el.scrollHeight;
     }
 
     async function sendMessage(e) {
         e.preventDefault();
         const input = qs('#chatInput');
         const text = input.value.trim();
-        if (!text) return;
+        if (!text || !store.activeListing || !store.user) return;
 
-        const res = await apiFetch(`/books/${store.activeListing._id}/message`, {
-            method: 'POST', body: JSON.stringify({ text })
-        });
-
-        if (res) {
-            // Update local state
-            store.activeListing.msgs.push(res);
-            const masterIdx = store.listings.findIndex(b => b._id === store.activeListing._id);
-            if(masterIdx > -1) store.listings[masterIdx].msgs.push(res);
-            
-            // Re-render chat
-            qs('#chatMsgs').innerHTML = renderChatBubbles(store.activeListing.msgs);
+        try {
+            const msgsRef = ref(db, `books/${store.activeListing._id}/msgs`);
+            const newMsgRef = push(msgsRef);
+            await set(newMsgRef, {
+                text,
+                by: store.user.name,
+                byId: store.user.userId,
+                timestamp: Date.now()
+            });
             input.value = '';
-            scrollToBottom();
+            // onValue listener on /books will refresh the chat automatically
+        } catch (err) {
+            alert('Could not send message: ' + (err.message || 'unknown error'));
         }
     }
 
-    // --- ACTIONS ---
-    async function loadBooks() {
-        const data = await apiFetch('/books');
-        if (data) {
-            store.listings = data;
-            qs('#statTotalBooks').textContent = data.length;
+    // --- DATA LOADING (Realtime) ---
+    function loadBooks() {
+        const booksRef = ref(db, 'books');
+        onValue(booksRef, (snapshot) => {
+            const data = snapshot.val() || {};
+            store.listings = Object.entries(data).map(([id, b]) => ({
+                _id: id,
+                ...b,
+                msgs: b.msgs ? Object.entries(b.msgs).map(([mid, m]) => ({ _id: mid, ...m })).sort((a, b) => a.timestamp - b.timestamp) : []
+            }));
+
+            qs('#statTotalBooks').textContent = store.listings.length;
+
             renderListings();
-        }
+            if (!qs('#my-listingsView').classList.contains('hidden')) renderMyListings();
+
+            // Keep open chat/detail modal in sync
+            if (store.activeListing) {
+                const updated = store.listings.find(b => b._id === store.activeListing._id);
+                if (updated) {
+                    store.activeListing = updated;
+                    const chatEl = qs('#chatMsgs');
+                    if (chatEl) {
+                        chatEl.innerHTML = renderChatBubbles(updated.msgs);
+                        scrollToBottom();
+                    }
+                }
+            }
+        }, (err) => {
+            console.error('Failed to load books:', err);
+            alert('Could not load listings: ' + (err.message || 'unknown error'));
+        });
     }
 
     async function deleteListing(id) {
-        if(!confirm("Delete this listing?")) return;
-        const res = await apiFetch(`/books/${id}`, { method: 'DELETE' });
-        if(res && res.success) {
-            store.listings = store.listings.filter(b => b._id !== id);
-            renderListings();
-            renderMyListings();
+        if (!confirm("Delete this listing?")) return;
+        try {
+            await remove(ref(db, `books/${id}`));
             closeModal('detailModal');
+        } catch (err) {
+            alert('Could not delete listing: ' + (err.message || 'unknown error'));
         }
     }
+    window.deleteListing = deleteListing;
 
-    // --- FORMS ---
+    // --- FORMS: Post a listing ---
     qs('#listingForm').onsubmit = async (e) => {
         e.preventDefault();
+        if (!store.user) {
+            openModal('authModal');
+            return;
+        }
         const f = e.target;
         const img = qs('#preview').src;
-        // Check if src is empty or placeholder (simple check)
-        const finalImg = img.length > 100 ? img : ''; 
+        const finalImg = img.length > 100 ? img : '';
 
         const payload = {
             title: f.title.value,
@@ -584,22 +657,27 @@
             description: f.description.value,
             contact: f.contact.value,
             type: f.type.value,
-            price: f.price.value,
-            image: finalImg
+            price: Number(f.price.value) || 0,
+            image: finalImg,
+            owner: { userId: store.user.userId, name: store.user.name },
+            createdAt: Date.now()
         };
 
-        const res = await apiFetch('/books', { method: 'POST', body: JSON.stringify(payload) });
-        if(res && res.success) {
+        try {
+            const booksRef = ref(db, 'books');
+            const newRef = push(booksRef);
+            await set(newRef, payload);
             f.reset();
-            qs('#preview').style.display='none';
-            store.listings.unshift(res.data);
+            qs('#preview').style.display = 'none';
             setView('listings');
+        } catch (err) {
+            alert('Could not publish listing: ' + (err.message || 'unknown error'));
         }
     };
 
     qs('#imageInput').onchange = (e) => {
         const file = e.target.files[0];
-        if(file) {
+        if (file) {
             const reader = new FileReader();
             reader.onload = (ev) => {
                 qs('#preview').src = ev.target.result;
@@ -610,31 +688,61 @@
     };
 
     // --- AUTH ---
-    function switchAuthTab(tab) {
+    window.switchAuthTab = function(tab) {
         const isLogin = tab === 'login';
         qs('#authMode').value = tab;
         qs('#nameGroup').style.display = isLogin ? 'none' : 'block';
+        qs('#authName').required = !isLogin;
         qs('#tabLogin').className = `btn ${isLogin ? 'brand' : 'ghost'}`;
         qs('#tabSignup').className = `btn ${!isLogin ? 'brand' : 'ghost'}`;
         qs('#authTitle').textContent = isLogin ? 'Welcome Back' : 'Create Account';
-    }
+        qs('#authError').textContent = '';
+    };
 
     qs('#authForm').onsubmit = async (e) => {
         e.preventDefault();
-        const mode = qs('#authMode').value;
-        const endpoint = mode === 'login' ? '/auth/login' : '/auth/signup';
-        const body = {
-            email: qs('#authEmail').value,
-            password: qs('#authPassword').value
-        };
-        if(mode === 'signup') body.name = qs('#authName').value;
+        const errorEl = qs('#authError');
+        const submitBtn = qs('#authSubmitBtn');
+        errorEl.textContent = '';
 
-        const res = await apiFetch(endpoint, { method: 'POST', body: JSON.stringify(body) });
-        if(res && res.success) {
-            store.user = res.data;
+        const mode = qs('#authMode').value;
+        const email = qs('#authEmail').value.trim();
+        const password = qs('#authPassword').value;
+        const name = qs('#authName').value.trim();
+
+        if (!email.toLowerCase().endsWith('@gmail.com')) {
+            errorEl.textContent = 'Please use a @gmail.com email address.';
+            return;
+        }
+        if (mode === 'signup' && !name) {
+            errorEl.textContent = 'Please enter your full name.';
+            return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Please wait...';
+
+        try {
+            if (mode === 'signup') {
+                const cred = await createUserWithEmailAndPassword(auth, email, password);
+                await updateProfile(cred.user, { displayName: name });
+                store.user = { userId: cred.user.uid, name, email };
+            } else {
+                const cred = await signInWithEmailAndPassword(auth, email, password);
+                store.user = {
+                    userId: cred.user.uid,
+                    name: cred.user.displayName || email.split('@')[0],
+                    email
+                };
+            }
             updateAuthUI();
             closeModal('authModal');
-            loadBooks(); // reload to get my-listings specific data if needed
+            qs('#authForm').reset();
+        } catch (err) {
+            errorEl.textContent = friendlyAuthError(err);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Continue';
         }
     };
 
@@ -651,10 +759,13 @@
         }
     }
 
-    function logout() {
-        store.user = null;
+    async function logout() {
+        try {
+            await signOut(auth);
+        } catch (err) {
+            console.error(err);
+        }
         setView('home');
-        updateAuthUI();
     }
 
     // --- INITIALIZATION ---
@@ -667,9 +778,13 @@
     // Filter listeners
     ['#q', '#typeFilter', '#sortBy'].forEach(s => qs(s).addEventListener('input', renderListings));
 
+    window.closeModal = closeModal;
+    window.openModal = openModal;
+
     // Start
     loadBooks();
     updateAuthUI();
+    switchAuthTab('login');
   </script>
 </body>
 </html>
